@@ -9,7 +9,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+
 }
 
 
@@ -59,4 +59,68 @@ model UserProfile {
 }
 
 
+model Classroom {
+  id            String   @id @default(uuid())
 
+  ownerId       String
+  name          String
+  description   String?
+
+  joinCode      String   @unique
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  owner         User @relation("ClassroomOwner", fields: [ownerId], references: [id])
+
+  members       ClassroomMember[]
+
+  @@map("classrooms")
+}
+
+model ClassroomMember {
+  id            String   @id @default(uuid())
+
+  classroomId   String
+  userId        String
+
+  createdAt     DateTime @default(now())
+
+  classroom     Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([classroomId, userId])
+
+  @@map("classroom_members")
+}
+
+
+model PasswordResetToken {
+
+  id         String   @id @default(uuid())
+
+  email      String
+
+  token      String   @unique
+
+  expiresAt  DateTime
+
+  createdAt  DateTime @default(now())
+}
+
+
+model TeacherInvite {
+
+  id         String   @id @default(uuid())
+
+  email      String   @unique
+
+  token      String   @unique
+
+  expiresAt  DateTime
+
+  used       Boolean  @default(false)
+
+  createdAt  DateTime @default(now())
+}
