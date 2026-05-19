@@ -56,6 +56,7 @@ export async function PATCH(req: Request){
         );
 
     } catch (error) {
+        console.error("Error in updating profile:", error);
         return NextResponse.json(
             {error: "Invalid input data"},
             {status: 400}

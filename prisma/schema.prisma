@@ -9,9 +9,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-
 }
-
 
 //////////////////////////////////////////////////////
 // ENUMS
@@ -62,58 +60,59 @@ enum ViolationType {
 //////////////////////////////////////////////////////
 
 model User {
-  id                  String         @id @default(uuid())
+  id String @id @default(uuid())
 
-  email               String         @unique
-  password            String
+  email    String @unique
+  password String
 
-  role                UserRole       @default(student)
+  role UserRole @default(student)
 
-  status              AccountStatus  @default(active)
+  status AccountStatus @default(active)
 
-  isVerified          Boolean        @default(false)
+  isVerified Boolean @default(false)
 
-  verificationToken   String?
+  verificationToken String?
 
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  profile             UserProfile?
+  profile UserProfile?
 
-  classrooms          Classroom[]    @relation("ClassroomOwner")
+  classrooms Classroom[] @relation("ClassroomOwner")
 
-  memberships         ClassroomMember[]
+  memberships ClassroomMember[]
 
-  examAttempts        ExamAttempt[]
+  examAttempts ExamAttempt[]
 
-  notifications       Notification[]
+  notifications Notification[]
 
-  uploads             Upload[]
+  announcements Announcement[] @relation("TeacherAnnouncements")
 
-   createdExams       Exam[]
+  uploads Upload[]
 
-  createdQuestions   Question[]
+  createdExams Exam[]
+
+  createdQuestions Question[]
 
   @@map("users")
 }
 
 model UserProfile {
+  id String @id @default(uuid())
 
-  id            String   @id @default(uuid())
+  userId String @unique
 
-  userId        String   @unique
+  displayName String
 
-  displayName   String
+  avatarUrl String?
 
-  avatarUrl     String?
+  bio String?
 
-  bio           String?
+  createdAt DateTime @default(now())
 
-  createdAt     DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  updatedAt     DateTime @updatedAt
-
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
 }
@@ -123,31 +122,29 @@ model UserProfile {
 //////////////////////////////////////////////////////
 
 model PasswordResetToken {
+  id String @id @default(uuid())
 
-  id         String   @id @default(uuid())
+  email String
 
-  email      String
+  token String @unique
 
-  token      String   @unique
+  expiresAt DateTime
 
-  expiresAt  DateTime
-
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model TeacherInvite {
+  id String @id @default(uuid())
 
-  id         String   @id @default(uuid())
+  email String @unique
 
-  email      String   @unique
+  token String @unique
 
-  token      String   @unique
+  expiresAt DateTime
 
-  expiresAt  DateTime
+  used Boolean @default(false)
 
-  used       Boolean  @default(false)
-
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 //////////////////////////////////////////////////////
@@ -155,48 +152,47 @@ model TeacherInvite {
 //////////////////////////////////////////////////////
 
 model Classroom {
+  id String @id @default(uuid())
 
-  id            String   @id @default(uuid())
+  ownerId String
 
-  ownerId       String
+  name String
 
-  name          String
+  subject String?
 
-  subject       String?
+  description String?
 
-  description   String?
+  joinCode String @unique
 
-  joinCode      String   @unique
+  createdAt DateTime @default(now())
 
-  createdAt     DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  updatedAt     DateTime @updatedAt
+  owner User @relation("ClassroomOwner", fields: [ownerId], references: [id])
 
-  owner         User @relation("ClassroomOwner", fields: [ownerId], references: [id])
+  members ClassroomMember[]
 
-  members       ClassroomMember[]
+  exams Exam[]
 
-  exams         Exam[]
+  announcements Announcement[]
 
   @@map("classrooms")
 }
 
 model ClassroomMember {
+  id String @id @default(uuid())
 
-  id            String   @id @default(uuid())
+  classroomId String
 
-  classroomId   String
+  userId String
 
-  userId        String
+  createdAt DateTime @default(now())
 
-  createdAt     DateTime @default(now())
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
 
-  classroom     Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
-
-  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([classroomId, userId])
-
   @@map("classroom_members")
 }
 
@@ -205,52 +201,51 @@ model ClassroomMember {
 //////////////////////////////////////////////////////
 
 model Exam {
+  id String @id @default(uuid())
 
-  id                  String       @id @default(uuid())
+  classroomId String
 
-  classroomId         String
+  createdById String
 
-  createdById         String
+  title String
 
-  title               String
+  description String?
 
-  description         String?
+  instructions String?
 
-  instructions        String?
+  status ExamStatus @default(draft)
 
-  status              ExamStatus   @default(draft)
+  durationMinutes Int
 
-  durationMinutes     Int
+  totalMarks Int
 
-  totalMarks          Int
+  passingMarks Int?
 
-  passingMarks        Int?
+  negativeMarking Float?
 
-  negativeMarking     Float?
+  shuffleQuestions Boolean @default(false)
 
-  shuffleQuestions    Boolean      @default(false)
+  shuffleOptions Boolean @default(false)
 
-  shuffleOptions      Boolean      @default(false)
+  fullscreenRequired Boolean @default(false)
 
-  fullscreenRequired  Boolean      @default(false)
+  maxTabSwitches Int @default(3)
 
-  maxTabSwitches      Int          @default(3)
+  startsAt DateTime?
 
-  startsAt            DateTime?
+  endsAt DateTime?
 
-  endsAt              DateTime?
+  createdAt DateTime @default(now())
 
-  createdAt           DateTime     @default(now())
+  updatedAt DateTime @updatedAt
 
-  updatedAt           DateTime     @updatedAt
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
 
-  classroom           Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id])
 
-  createdBy           User @relation(fields: [createdById], references: [id])
+  questions ExamQuestion[]
 
-  questions           ExamQuestion[]
-
-  attempts            ExamAttempt[]
+  attempts ExamAttempt[]
 
   @@map("exams")
 }
@@ -260,51 +255,49 @@ model Exam {
 //////////////////////////////////////////////////////
 
 model Question {
+  id String @id @default(uuid())
 
-  id                  String          @id @default(uuid())
+  createdById String
 
-  createdById         String
+  questionText String
 
-  questionText        String
+  explanation String?
 
-  explanation         String?
+  imageUrl String?
 
-  imageUrl            String?
+  type QuestionType
 
-  type                QuestionType
+  marks Int @default(1)
 
-  marks               Int             @default(1)
+  difficulty String?
 
-  difficulty          String?
+  createdAt DateTime @default(now())
 
-  createdAt           DateTime        @default(now())
+  updatedAt DateTime @updatedAt
 
-  updatedAt           DateTime        @updatedAt
+  createdBy User @relation(fields: [createdById], references: [id])
 
-  createdBy           User @relation(fields: [createdById], references: [id])
+  options QuestionOption[]
 
-  options             QuestionOption[]
+  exams ExamQuestion[]
 
-  exams               ExamQuestion[]
-
-  attemptAnswers      AttemptAnswer[]
+  attemptAnswers AttemptAnswer[]
 
   @@map("questions")
 }
 
 model QuestionOption {
+  id String @id @default(uuid())
 
-  id            String   @id @default(uuid())
+  questionId String
 
-  questionId    String
+  optionText String
 
-  optionText    String
+  isCorrect Boolean @default(false)
 
-  isCorrect     Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  createdAt     DateTime @default(now())
-
-  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@map("question_options")
 }
@@ -314,23 +307,21 @@ model QuestionOption {
 //////////////////////////////////////////////////////
 
 model ExamQuestion {
+  id String @id @default(uuid())
 
-  id            String   @id @default(uuid())
+  examId String
 
-  examId        String
+  questionId String
 
-  questionId    String
+  order Int
 
-  order         Int
+  createdAt DateTime @default(now())
 
-  createdAt     DateTime @default(now())
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
 
-  exam          Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
-
-  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([examId, questionId])
-
   @@map("exam_questions")
 }
 
@@ -339,32 +330,31 @@ model ExamQuestion {
 //////////////////////////////////////////////////////
 
 model ExamAttempt {
+  id String @id @default(uuid())
 
-  id                  String          @id @default(uuid())
+  examId String
 
-  examId              String
+  studentId String
 
-  studentId           String
+  status AttemptStatus @default(in_progress)
 
-  status              AttemptStatus   @default(in_progress)
+  score Float?
 
-  score               Float?
+  startedAt DateTime @default(now())
 
-  startedAt           DateTime        @default(now())
+  submittedAt DateTime?
 
-  submittedAt         DateTime?
+  createdAt DateTime @default(now())
 
-  createdAt           DateTime        @default(now())
+  updatedAt DateTime @updatedAt
 
-  updatedAt           DateTime        @updatedAt
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
 
-  exam                Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student User @relation(fields: [studentId], references: [id])
 
-  student             User @relation(fields: [studentId], references: [id])
+  answers AttemptAnswer[]
 
-  answers             AttemptAnswer[]
-
-  violations          Violation[]
+  violations Violation[]
 
   @@map("exam_attempts")
 }
@@ -374,31 +364,29 @@ model ExamAttempt {
 //////////////////////////////////////////////////////
 
 model AttemptAnswer {
+  id String @id @default(uuid())
 
-  id                  String   @id @default(uuid())
+  attemptId String
 
-  attemptId           String
+  questionId String
 
-  questionId          String
+  selectedOptionId String?
 
-  selectedOptionId    String?
+  answerText String?
 
-  answerText          String?
+  isCorrect Boolean?
 
-  isCorrect           Boolean?
+  marksAwarded Float?
 
-  marksAwarded        Float?
+  createdAt DateTime @default(now())
 
-  createdAt           DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  updatedAt           DateTime @updatedAt
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 
-  attempt             ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-
-  question            Question @relation(fields: [questionId], references: [id])
+  question Question @relation(fields: [questionId], references: [id])
 
   @@unique([attemptId, questionId])
-
   @@map("attempt_answers")
 }
 
@@ -407,18 +395,17 @@ model AttemptAnswer {
 //////////////////////////////////////////////////////
 
 model Violation {
+  id String @id @default(uuid())
 
-  id              String          @id @default(uuid())
+  attemptId String
 
-  attemptId       String
+  type ViolationType
 
-  type            ViolationType
+  details String?
 
-  details         String?
+  createdAt DateTime @default(now())
 
-  createdAt       DateTime        @default(now())
-
-  attempt         ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 
   @@map("violations")
 }
@@ -428,22 +415,21 @@ model Violation {
 //////////////////////////////////////////////////////
 
 model Upload {
+  id String @id @default(uuid())
 
-  id              String   @id @default(uuid())
+  uploadedById String
 
-  uploadedById    String
+  fileName String
 
-  fileName        String
+  fileUrl String
 
-  fileUrl         String
+  mimeType String
 
-  mimeType        String
+  size Int
 
-  size            Int
+  createdAt DateTime @default(now())
 
-  createdAt       DateTime @default(now())
-
-  uploadedBy      User @relation(fields: [uploadedById], references: [id])
+  uploadedBy User @relation(fields: [uploadedById], references: [id])
 
   @@map("uploads")
 }
@@ -453,20 +439,39 @@ model Upload {
 //////////////////////////////////////////////////////
 
 model Notification {
+  id String @id @default(uuid())
 
-  id              String   @id @default(uuid())
+  userId String
 
-  userId          String
+  title String
 
-  title           String
+  message String
 
-  message         String
+  isRead Boolean @default(false)
 
-  isRead          Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  createdAt       DateTime @default(now())
-
-  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model Announcement {
+  id String @id @default(uuid())
+
+  classroomId String
+
+  teacherId String
+
+  title String
+
+  content String
+
+  createdAt DateTime @default(now())
+
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  teacher User @relation("TeacherAnnouncements", fields: [teacherId], references: [id])
+
+  @@map("announcements")
 }
