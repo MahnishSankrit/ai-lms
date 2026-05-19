@@ -13,6 +13,9 @@ datasource db {
 }
 
 
+//////////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////////
 
 enum UserRole {
   admin
@@ -26,34 +29,88 @@ enum AccountStatus {
   suspended
 }
 
+enum ExamStatus {
+  draft
+  published
+  ongoing
+  completed
+}
+
+enum QuestionType {
+  mcq
+  multiple_select
+  true_false
+  short_answer
+}
+
+enum AttemptStatus {
+  in_progress
+  submitted
+  auto_submitted
+}
+
+enum ViolationType {
+  tab_switch
+  fullscreen_exit
+  copy_paste
+  right_click
+  window_blur
+}
+
+//////////////////////////////////////////////////////
+// USER MODELS
+//////////////////////////////////////////////////////
+
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  password      String
-  role          UserRole       @default(student)
-  status        AccountStatus  @default(active)
+  id                  String         @id @default(uuid())
 
-  verificationToken String?
-  isVerified Boolean @default(false)
+  email               String         @unique
+  password            String
 
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  role                UserRole       @default(student)
 
-  profile       UserProfile?
-  classrooms    Classroom[]    @relation("ClassroomOwner")
-  memberships   ClassroomMember[]
+  status              AccountStatus  @default(active)
+
+  isVerified          Boolean        @default(false)
+
+  verificationToken   String?
+
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  profile             UserProfile?
+
+  classrooms          Classroom[]    @relation("ClassroomOwner")
+
+  memberships         ClassroomMember[]
+
+  examAttempts        ExamAttempt[]
+
+  notifications       Notification[]
+
+  uploads             Upload[]
+
+   createdExams       Exam[]
+
+  createdQuestions   Question[]
 
   @@map("users")
 }
 
 model UserProfile {
+
   id            String   @id @default(uuid())
 
   userId        String   @unique
+
   displayName   String
+
   avatarUrl     String?
 
+  bio           String?
+
   createdAt     DateTime @default(now())
+
   updatedAt     DateTime @updatedAt
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -61,43 +118,9 @@ model UserProfile {
   @@map("user_profiles")
 }
 
-
-model Classroom {
-  id            String   @id @default(uuid())
-
-  ownerId       String
-  name          String
-  description   String?
-
-  joinCode      String   @unique
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  owner         User @relation("ClassroomOwner", fields: [ownerId], references: [id])
-
-  members       ClassroomMember[]
-
-  @@map("classrooms")
-}
-
-model ClassroomMember {
-  id            String   @id @default(uuid())
-
-  classroomId   String
-  userId        String
-
-  createdAt     DateTime @default(now())
-
-  classroom     Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
-
-  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([classroomId, userId])
-
-  @@map("classroom_members")
-}
-
+//////////////////////////////////////////////////////
+// AUTH SUPPORT
+//////////////////////////////////////////////////////
 
 model PasswordResetToken {
 
@@ -112,7 +135,6 @@ model PasswordResetToken {
   createdAt  DateTime @default(now())
 }
 
-
 model TeacherInvite {
 
   id         String   @id @default(uuid())
@@ -126,4 +148,325 @@ model TeacherInvite {
   used       Boolean  @default(false)
 
   createdAt  DateTime @default(now())
+}
+
+//////////////////////////////////////////////////////
+// CLASSROOMS
+//////////////////////////////////////////////////////
+
+model Classroom {
+
+  id            String   @id @default(uuid())
+
+  ownerId       String
+
+  name          String
+
+  subject       String?
+
+  description   String?
+
+  joinCode      String   @unique
+
+  createdAt     DateTime @default(now())
+
+  updatedAt     DateTime @updatedAt
+
+  owner         User @relation("ClassroomOwner", fields: [ownerId], references: [id])
+
+  members       ClassroomMember[]
+
+  exams         Exam[]
+
+  @@map("classrooms")
+}
+
+model ClassroomMember {
+
+  id            String   @id @default(uuid())
+
+  classroomId   String
+
+  userId        String
+
+  createdAt     DateTime @default(now())
+
+  classroom     Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([classroomId, userId])
+
+  @@map("classroom_members")
+}
+
+//////////////////////////////////////////////////////
+// EXAMS
+//////////////////////////////////////////////////////
+
+model Exam {
+
+  id                  String       @id @default(uuid())
+
+  classroomId         String
+
+  createdById         String
+
+  title               String
+
+  description         String?
+
+  instructions        String?
+
+  status              ExamStatus   @default(draft)
+
+  durationMinutes     Int
+
+  totalMarks          Int
+
+  passingMarks        Int?
+
+  negativeMarking     Float?
+
+  shuffleQuestions    Boolean      @default(false)
+
+  shuffleOptions      Boolean      @default(false)
+
+  fullscreenRequired  Boolean      @default(false)
+
+  maxTabSwitches      Int          @default(3)
+
+  startsAt            DateTime?
+
+  endsAt              DateTime?
+
+  createdAt           DateTime     @default(now())
+
+  updatedAt           DateTime     @updatedAt
+
+  classroom           Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  createdBy           User @relation(fields: [createdById], references: [id])
+
+  questions           ExamQuestion[]
+
+  attempts            ExamAttempt[]
+
+  @@map("exams")
+}
+
+//////////////////////////////////////////////////////
+// QUESTIONS
+//////////////////////////////////////////////////////
+
+model Question {
+
+  id                  String          @id @default(uuid())
+
+  createdById         String
+
+  questionText        String
+
+  explanation         String?
+
+  imageUrl            String?
+
+  type                QuestionType
+
+  marks               Int             @default(1)
+
+  difficulty          String?
+
+  createdAt           DateTime        @default(now())
+
+  updatedAt           DateTime        @updatedAt
+
+  createdBy           User @relation(fields: [createdById], references: [id])
+
+  options             QuestionOption[]
+
+  exams               ExamQuestion[]
+
+  attemptAnswers      AttemptAnswer[]
+
+  @@map("questions")
+}
+
+model QuestionOption {
+
+  id            String   @id @default(uuid())
+
+  questionId    String
+
+  optionText    String
+
+  isCorrect     Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+
+  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_options")
+}
+
+//////////////////////////////////////////////////////
+// EXAM QUESTIONS
+//////////////////////////////////////////////////////
+
+model ExamQuestion {
+
+  id            String   @id @default(uuid())
+
+  examId        String
+
+  questionId    String
+
+  order         Int
+
+  createdAt     DateTime @default(now())
+
+  exam          Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, questionId])
+
+  @@map("exam_questions")
+}
+
+//////////////////////////////////////////////////////
+// EXAM ATTEMPTS
+//////////////////////////////////////////////////////
+
+model ExamAttempt {
+
+  id                  String          @id @default(uuid())
+
+  examId              String
+
+  studentId           String
+
+  status              AttemptStatus   @default(in_progress)
+
+  score               Float?
+
+  startedAt           DateTime        @default(now())
+
+  submittedAt         DateTime?
+
+  createdAt           DateTime        @default(now())
+
+  updatedAt           DateTime        @updatedAt
+
+  exam                Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  student             User @relation(fields: [studentId], references: [id])
+
+  answers             AttemptAnswer[]
+
+  violations          Violation[]
+
+  @@map("exam_attempts")
+}
+
+//////////////////////////////////////////////////////
+// ATTEMPT ANSWERS
+//////////////////////////////////////////////////////
+
+model AttemptAnswer {
+
+  id                  String   @id @default(uuid())
+
+  attemptId           String
+
+  questionId          String
+
+  selectedOptionId    String?
+
+  answerText          String?
+
+  isCorrect           Boolean?
+
+  marksAwarded        Float?
+
+  createdAt           DateTime @default(now())
+
+  updatedAt           DateTime @updatedAt
+
+  attempt             ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  question            Question @relation(fields: [questionId], references: [id])
+
+  @@unique([attemptId, questionId])
+
+  @@map("attempt_answers")
+}
+
+//////////////////////////////////////////////////////
+// VIOLATIONS
+//////////////////////////////////////////////////////
+
+model Violation {
+
+  id              String          @id @default(uuid())
+
+  attemptId       String
+
+  type            ViolationType
+
+  details         String?
+
+  createdAt       DateTime        @default(now())
+
+  attempt         ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@map("violations")
+}
+
+//////////////////////////////////////////////////////
+// FILE UPLOADS
+//////////////////////////////////////////////////////
+
+model Upload {
+
+  id              String   @id @default(uuid())
+
+  uploadedById    String
+
+  fileName        String
+
+  fileUrl         String
+
+  mimeType        String
+
+  size            Int
+
+  createdAt       DateTime @default(now())
+
+  uploadedBy      User @relation(fields: [uploadedById], references: [id])
+
+  @@map("uploads")
+}
+
+//////////////////////////////////////////////////////
+// NOTIFICATIONS
+//////////////////////////////////////////////////////
+
+model Notification {
+
+  id              String   @id @default(uuid())
+
+  userId          String
+
+  title           String
+
+  message         String
+
+  isRead          Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }
