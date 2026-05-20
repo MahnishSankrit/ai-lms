@@ -34,6 +34,8 @@ export const createExamSchema = z.object({
 
   fullscreenRequired: z.boolean(),
 
+  status: z.enum(["draft", "published", "ongoing", "completed"]).optional(),
+
   startsAt: z.string().optional(),
 
   endsAt: z.string().optional(),
