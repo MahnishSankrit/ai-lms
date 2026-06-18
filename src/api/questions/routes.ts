@@ -1,0 +1,106 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { createQuestionSchema } from "@/validation/question.schema";
+import { ZodError } from "zod";
+
+
+export async function POST(req: Request){
+    try {
+        const session  = await getServerSession(authOptions);
+        if(!session){
+            return NextResponse.json(
+                {error: "Unauthorized"},
+                {status: 401}
+            )
+        }
+        if(session.user.role !== "teacher"){
+            return NextResponse.json(
+                {error: "Forbidden"},
+                {status: 403}
+            )
+        }
+
+        const validateBody = await req.json();
+        const validatedBody = createQuestionSchema.parse(validateBody); 
+
+        // find the user like it is the one who is creating the question
+        const teacherEmail = session.user.email
+        if(!teacherEmail){
+            return NextResponse.json(
+                {error: "User email missing from session"},
+                {status: 400}
+            )
+        }
+
+        const teacher = await prisma.user.findUnique({
+            where: {
+                email: teacherEmail,
+            }
+        })
+
+        if(!teacher){
+            return NextResponse.json(
+                {error: "User not found"},
+                {status: 404}
+            )
+        }
+
+        if(teacher.status === "suspended"){
+            return NextResponse.json(
+                {error: "Your account is suspended, you cannot create questions"},
+                {status: 403}
+            )
+        }
+
+        if(teacher.isVerified === false){
+            return NextResponse.json(
+                {error: "Your account is not verified, you cannot create questions"},
+                {status: 403}
+            )
+        }
+
+        // creating the questions 
+        const question = await prisma.question.create({
+            data : {
+                questionText : validatedBody.questionText,
+                explanation: validatedBody.explanation,
+                imageUrl: validatedBody.imageUrl,
+                type : validatedBody.type,
+                marks : validatedBody.marks,
+                difficulty : validatedBody.difficulty,
+                createdById : teacher.id,
+                options : {
+                    create : validatedBody.options,
+                },
+            },
+            include: {
+                options: true,
+            }
+        })
+
+        return NextResponse.json(
+            {message: "Question created successfully", question},
+            {status: 201}
+        )
+
+    } catch (error) {
+        console.error("Error creating question:", error);
+        if(error instanceof ZodError){
+            return NextResponse.json(
+                {error: "Invalid request body", details: error.issues}, 
+                {status: 400}
+            )
+        }   
+
+        return NextResponse.json(
+            {error: "Internal Server Error"},
+            {status: 500}
+        )
+    }
+}
+
+
+
+
