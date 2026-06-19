@@ -3,6 +3,7 @@ import * as z from "zod";
 
 
 export const createQuestionSchema = z.object({
+    createdById: z.string(),
     questionText : z.string().min(5),
     type : z.enum(["mcq", "true_false", "short_answer", "multiple_select"]),
     marks : z.number().min(1),
