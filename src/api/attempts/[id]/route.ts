@@ -1,0 +1,150 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+// Authentication
+// ↓
+// Get Attempt ID
+// ↓
+// Find Attempt
+// ↓
+// Include Exam
+// ↓
+// Include Answers
+// ↓
+// Include Violations
+// ↓
+// Attempt Exists?
+// ↓
+// Student?
+// ↓
+// Own Attempt?
+// ↓
+// Teacher?
+// ↓
+// Own Exam?
+// ↓
+// Return Attempt
+
+
+
+export async function GET(req: Request,{ params }: { params: { id: string } }) {
+    try {
+
+
+        // STEP 1: AUTHENTICATION
+
+        const session = await getServerSession(authOptions);
+
+        if (!session) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        // STEP 2: GET ATTEMPT ID
+
+        const attemptId = params.id;
+
+        // STEP 3: FIND ATTEMPT WITH RELATIONS
+
+        const attempt =
+            await prisma.examAttempt.findUnique({
+                where: {
+                    id: attemptId,
+                },
+
+                include: {
+                    exam: true,
+
+                    answers: {
+                        include: {
+                            question: true,
+                        },
+                    },
+
+                    violations: true,
+                },
+            });
+
+        // STEP 4: ATTEMPT EXISTS?
+
+        if (!attempt) {
+            return NextResponse.json(
+                {
+                    error: "Attempt not found",
+                },
+                {
+                    status: 404,
+                }
+            );
+        }
+
+        // STEP 5: STUDENT ACCESS
+
+        if (session.user.role === "student") {
+
+            if (
+                attempt.studentId !==
+                session.user.id
+            ) {
+                return NextResponse.json(
+                    {
+                        error: "Forbidden",
+                    },
+                    {
+                        status: 403,
+                    }
+                );
+            }
+        }
+
+        // STEP 6: TEACHER ACCESS
+
+        if (session.user.role === "teacher") {
+
+            if (
+                attempt.exam.createdById !==
+                session.user.id
+            ) {
+                return NextResponse.json(
+                    {
+                        error: "Forbidden",
+                    },
+                    {
+                        status: 403,
+                    }
+                );
+            }
+        }
+
+        // STEP 7: RETURN ATTEMPT
+
+        return NextResponse.json(
+            {
+                attempt,
+            },
+            {
+                status: 200,
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Error fetching attempt:",
+            error
+        );
+
+        return NextResponse.json(
+            {
+                error: "Internal Server Error",
+            },
+            {
+                status: 500,
+            }
+        );
+    }
+}
