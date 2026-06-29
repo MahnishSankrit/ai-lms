@@ -11,95 +11,138 @@
 // 2. find the teacher who is creating the questions, we can get the teacher from the session, and then find the teacher in the database using the email from the session
 // 3. create a transaction for each question creation, and if any question creation fails, we can rollback the transaction for that question and return the error for that question in the response, and if all questions are created successfully, we can commit all the transactions and return the created questions in the response
 
-
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createQuestionSchema } from "@/validation/question.schema";
-// import { ZodError } from "zod";
+import { ZodError } from "zod";
 
-
-export async function POST(req: Request){
+export async function POST(req: Request) {
     try {
+
         const session = await getServerSession(authOptions);
-        if(!session){
+
+        if (!session) {
             return NextResponse.json(
-                {error: "Unauthorized"},
-                {status: 401}
-            )
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
         }
 
-        if(session.user.role !== "teacher"){
+        if (session.user.role !== "teacher") {
             return NextResponse.json(
-                {error: "Forbidden"},
-                {status: 403}
-            )
+                { error: "Forbidden" },
+                { status: 403 }
+            );
         }
 
-        const validateBody = await req.json();
-        const questions = createQuestionSchema.array().parse(validateBody); // validate the request body, it should be an array of questions
+        // Validate request body
+        const body = await req.json();
 
+        const questions =
+            createQuestionSchema.array().parse(body);
 
-        // find the user like it is the one who is creating the question
-       const teacherId = session.user.id;
-      
-
+        // Find teacher
         const teacher = await prisma.user.findUnique({
-            where:{
-                id: teacherId,
-            }
-        })
-        if(!teacher){
+            where: {
+                id: session.user.id,
+            },
+        });
+
+        if (!teacher) {
             return NextResponse.json(
-                {error: "User not found"},
-                {status: 404}
-            )
+                { error: "Teacher not found" },
+                { status: 404 }
+            );
         }
 
-        if(teacher.status === "suspended"){
+        if (teacher.status === "suspended") {
             return NextResponse.json(
-                {error: "Your account is suspended, you cannot create questions"},
-                {status: 403}
-            )
+                {
+                    error: "Your account is suspended.",
+                },
+                {
+                    status: 403,
+                }
+            );
         }
 
-        await prisma.$transaction(async(tran) => {
-            for(const ques of validateBody){
-                await tran.question.create({
+        await prisma.$transaction(async (tx) => {
+
+            for (const ques of questions) {
+
+                await tx.question.create({
+
                     data: {
+
                         createdById: teacher.id,
+
                         questionText: ques.questionText,
+
                         explanation: ques.explanation,
-                        imageUrl: ques.imageurl,
-                        type:ques.type,
+
+                        imageUrl: ques.imageUrl,
+
+                        type: ques.type,
+
                         marks: ques.marks,
+
                         difficulty: ques.difficulty,
-                        
-                        options:{
-                            create: ques.options.map((opt: { optionText: string; isCorrect: boolean }) => ({
-                                optionText:opt.optionText,
+
+                        options: {
+
+                            create: ques.options.map((opt) => ({
+
+                                optionText: opt.optionText,
+
                                 isCorrect: opt.isCorrect,
-                            }))
-                        }
-                    }
-                })
+
+                            })),
+
+                        },
+
+                    },
+
+                });
+
             }
-        })
+
+        });
 
         return NextResponse.json(
-            {message: "Questions created successfully"},
-             {status: 201}
-        )
+            {
+                message: "Questions created successfully",
+                totalQuestions: questions.length,
+            },
+            {
+                status: 201,
+            }
+        );
 
     } catch (error) {
-        console.error("Error creating questions:", error);
+        console.error("Error in POST /api/questions/bulk:", error);
+        if (error instanceof ZodError) {
+            return NextResponse.json(
+                {
+                    error: "Invalid request body",
+                },
+                {
+                    status: 400,
+                }
+            );
+        }
+
+        console.error("Bulk Question Error:", error);
+
         return NextResponse.json(
-            {message : "An error occurred while creating questions"},
-            {status: 500}
-        )
+            {
+                error: "Internal Server Error",
+            },
+            {
+                status: 500,
+            }
+        );
+
     }
 }
-
-
-

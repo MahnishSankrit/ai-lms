@@ -222,6 +222,32 @@ build later.
 
 Folder
 src/app/api/ai/
+
+Teacher
+   │
+   ▼
+Upload PDF
+   │
+   ▼
+Upload API
+   │
+   ▼
+PDF Extraction Service
+   │
+   ▼
+Extracted Text
+   │
+   ▼
+AI Question Generation API
+   │
+   ▼
+Teacher Reviews Questions
+   │
+   ▼
+Bulk Save API
+   │
+   ▼
+Question Bank
 APIs
 Method	Route	Purpose
 POST	/api/ai/generate-questions	AI MCQs
