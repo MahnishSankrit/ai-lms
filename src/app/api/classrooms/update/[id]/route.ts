@@ -41,6 +41,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             )
         }
 
+        // only the creater of this class room can update the classroom
+        if (classroom.ownerId !== session.user.id) {
+            return NextResponse.json(
+                { error: "Forbidden" },
+                { status: 403 }
+            );
+        }
+
         const body = await req.json();
         const validatedBody = updateClassroomSchema.parse(body);
 
