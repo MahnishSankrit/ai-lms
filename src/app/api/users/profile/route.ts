@@ -9,6 +9,31 @@ const UpdateProfileSchema = z.object({
     password: z.string().min(6).optional(),
 })
 
+/**
+ * @swagger
+ * /api/users/profile:
+ *   patch:
+ *     tags: [Users]
+ *     summary: Logged-in user updates their own email and/or password
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email: { type: string, format: email }
+ *               password: { type: string, minLength: 6 }
+ *     responses:
+ *       200:
+ *         description: Updated user (without password/verificationToken)
+ *       400:
+ *         description: "Validation error or any thrown error (including duplicate email), all mapped to 400"
+ *       401:
+ *         description: Not logged in
+ */
 export async function PATCH(req: Request){
     try {
         const user = await getServerSession(authOptions);

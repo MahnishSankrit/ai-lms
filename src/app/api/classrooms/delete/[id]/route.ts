@@ -7,6 +7,31 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 
+/**
+ * @swagger
+ * /api/classrooms/delete/{id}:
+ *   delete:
+ *     tags: [Classrooms]
+ *     summary: Teacher (owner) deletes a classroom
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Classroom deleted successfully
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       404:
+ *         description: Classroom not found or not owned by you
+ *       500:
+ *         description: Server error
+ */
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);

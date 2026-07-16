@@ -10,6 +10,31 @@ import * as z from "zod";
 
 
 
+/**
+ * @swagger
+ * /api/classrooms/{id}/members:
+ *   get:
+ *     tags: [Classrooms]
+ *     summary: Teacher (owner) lists classroom members
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: List of ClassroomMember rows (each includes .id, .userId, .user)
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       404:
+ *         description: Classroom not found or not owned by you
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);

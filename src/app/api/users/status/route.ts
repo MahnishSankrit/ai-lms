@@ -13,6 +13,38 @@ const updateStatusSchema = z.object({
   ]),
 });
 
+/**
+ * @swagger
+ * /api/users/status:
+ *   patch:
+ *     tags: [Users]
+ *     summary: Admin changes a user's account status
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [id, status]
+ *             properties:
+ *               id: { type: string }
+ *               status: { type: string, enum: [active, inactive, suspended] }
+ *     responses:
+ *       200:
+ *         description: User status updated successfully
+ *       400:
+ *         description: Missing fields, or invalid status value
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not an admin
+ *       404:
+ *         description: Target user not found
+ *       500:
+ *         description: Server error
+ */
 export async function PATCH(req: Request) {
     try {
         const user = await getServerSession(authOptions);

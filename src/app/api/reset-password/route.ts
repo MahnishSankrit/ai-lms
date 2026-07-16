@@ -3,6 +3,31 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 
+/**
+ * @swagger
+ * /api/reset-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Reset password using a forgot-password token
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [currToken, newPassword]
+ *             properties:
+ *               currToken: { type: string, description: "PasswordResetToken.token value", example: b6e1a9d2-0000-0000-0000-000000000000 }
+ *               newPassword: { type: string, example: newStudent123 }
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *       400:
+ *         description: Missing fields, invalid/expired/used token, or user not found for token
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(req: Request){
     try {
         const {currToken , newPassword} = await req.json();

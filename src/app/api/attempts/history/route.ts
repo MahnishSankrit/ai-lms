@@ -49,6 +49,31 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * @swagger
+ * /api/attempts/history:
+ *   get:
+ *     tags: [Attempts]
+ *     summary: Student's paginated exam-attempt history
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200:
+ *         description: Paginated attempt history
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a student
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request) {
     try {
 

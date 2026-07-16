@@ -12,6 +12,47 @@ import { Prisma, QuestionType } from "@prisma/client";
 // 6. Sorting
 // 7. Return results
 
+/**
+ * @swagger
+ * /api/questions/search:
+ *   get:
+ *     tags: [Questions]
+ *     summary: Search/filter/sort/paginate the teacher's question bank
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema: { type: string }
+ *         description: Case-insensitive substring match on questionText
+ *       - in: query
+ *         name: difficulty
+ *         schema: { type: string }
+ *       - in: query
+ *         name: type
+ *         schema: { type: string, enum: [mcq, multiple_select, true_false, short_answer] }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *       - in: query
+ *         name: sortBy
+ *         schema: { type: string, default: createdAt }
+ *       - in: query
+ *         name: sortOrder
+ *         schema: { type: string, enum: [asc, desc], default: desc }
+ *     responses:
+ *       200:
+ *         description: Matching questions
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions);

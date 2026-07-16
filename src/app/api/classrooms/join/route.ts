@@ -2,6 +2,37 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+/**
+ * @swagger
+ * /api/classrooms/join:
+ *   post:
+ *     tags: [Classrooms]
+ *     summary: Student joins a classroom
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [classroomId]
+ *             properties:
+ *               classroomId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Joined classroom successfully
+ *       400:
+ *         description: Missing classroom id, or already a member
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a student
+ *       404:
+ *         description: Classroom not found
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);

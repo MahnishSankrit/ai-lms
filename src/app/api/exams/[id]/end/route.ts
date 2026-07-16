@@ -7,6 +7,33 @@ import { prisma } from "@/lib/prisma";
 
 // can use the cron job to automatically end the exam when the end time is reached, but for now, we will just create an endpoint to end the exam manually, which can be called by the teacher from the frontend when they want to end the exam, or it can be called by a cron job that runs every minute to check if there are any ongoing exams that have reached their end time and end them automatically
 
+/**
+ * @swagger
+ * /api/exams/{id}/end:
+ *   post:
+ *     tags: [Exams]
+ *     summary: Teacher (owner) ends an ongoing exam (auto-submits in-progress attempts, marks completed)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Exam ended successfully
+ *       400:
+ *         description: Exam is not currently ongoing
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the exam's creator
+ *       404:
+ *         description: Exam not found
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions)

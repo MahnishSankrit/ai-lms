@@ -6,6 +6,29 @@ import { createQuestionSchema } from "@/validation/question.schema";
 import { ZodError } from "zod";
 import { Parser } from "json2csv";
 
+/**
+ * @swagger
+ * /api/questions/export:
+ *   post:
+ *     tags: [Questions]
+ *     summary: Export all of the teacher's questions as a downloadable CSV file
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: CSV file (Content-Type text/csv, attachment)
+ *         content:
+ *           text/csv:
+ *             schema: { type: string }
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       404:
+ *         description: Teacher not found, or teacher has no questions
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);

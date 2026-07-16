@@ -9,6 +9,35 @@ import { prisma } from "@/lib/prisma";
 
 
 
+/**
+ * @swagger
+ * /api/attempts/start:
+ *   post:
+ *     tags: [Attempts]
+ *     summary: Student starts their one attempt at a published, currently-open exam
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [examId]
+ *             properties:
+ *               examId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Exam attempt started (attemptId returned)
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a student; exam not published; outside startsAt/endsAt window; student not active/not enrolled; or already attempted
+ *       404:
+ *         description: Exam, student, or classroom not found
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);

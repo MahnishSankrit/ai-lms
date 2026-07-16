@@ -10,6 +10,47 @@ import { createExamSchema } from "@/validation/exam.schema";
 
 
 
+/**
+ * @swagger
+ * /api/exams:
+ *   post:
+ *     tags: [Exams]
+ *     summary: Teacher creates a new exam (starts as draft)
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [classroomId, title, durationMinutes, totalMarks, shuffleQuestions, shuffleOptions, fullscreenRequired]
+ *             properties:
+ *               classroomId: { type: string }
+ *               title: { type: string, minLength: 3, maxLength: 100, example: "Mid Semester Exam" }
+ *               description: { type: string, example: "Covers chapters 1 to 5" }
+ *               instructions: { type: string, example: "No calculators allowed." }
+ *               durationMinutes: { type: number, minimum: 1, example: 60 }
+ *               totalMarks: { type: number, minimum: 1, example: 50 }
+ *               passingMarks: { type: number, example: 20 }
+ *               negativeMarking: { type: number, example: 0.25 }
+ *               shuffleQuestions: { type: boolean, example: true }
+ *               shuffleOptions: { type: boolean, example: true }
+ *               fullscreenRequired: { type: boolean, example: true }
+ *               startsAt: { type: string, format: date-time, example: "2026-08-01T09:00:00.000Z" }
+ *               endsAt: { type: string, format: date-time, example: "2026-08-01T10:00:00.000Z" }
+ *     responses:
+ *       201:
+ *         description: Exam created (status = draft)
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       404:
+ *         description: Teacher not found, or classroom not found/not owned by you
+ *       500:
+ *         description: Validation error or server error
+ */
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);

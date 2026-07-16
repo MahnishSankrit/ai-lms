@@ -8,6 +8,24 @@ import { prisma } from "@/lib/prisma";
 
 
 
+/**
+ * @swagger
+ * /api/exams/get-exams:
+ *   get:
+ *     tags: [Exams]
+ *     summary: List exams (teacher's own, or student's published/enrolled exams)
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of exams
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Role is neither teacher nor student
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions);

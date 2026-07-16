@@ -17,6 +17,47 @@ const SESSION_COOKIE_NAME =
 
 
 
+/**
+ * @swagger
+ * /api/login:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Log in and receive a session cookie
+ *     description: Sets the next-auth.session-token (or __Secure- prefixed in production) httpOnly cookie used by every protected route.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email: { type: string, format: email, example: student1@example.com }
+ *               password: { type: string, minLength: 6, example: student123 }
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string, example: Login successful }
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     email: { type: string }
+ *                     role: { type: string, enum: [admin, teacher, student] }
+ *                     isVerified: { type: boolean }
+ *       400:
+ *         description: Invalid body shape, email not verified, or wrong password
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(req: Request): Promise<NextResponse> {
     try {
         const body = await req.json();

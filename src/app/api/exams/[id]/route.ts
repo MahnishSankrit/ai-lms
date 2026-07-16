@@ -3,6 +3,29 @@ import { getServerSession }from "next-auth";
 import { authOptions }from "@/lib/auth";
 import { prisma }from "@/lib/prisma";
 
+/**
+ * @swagger
+ * /api/exams/{id}:
+ *   get:
+ *     tags: [Exams]
+ *     summary: Get a single exam (full data for owning teacher, sanitized for member student)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Exam detail (shape differs by role)
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Teacher who doesn't own it; or student when exam isn't published or not a classroom member
+ *       404:
+ *         description: Exam not found
+ */
 export async function GET(
     req: Request,
     { params }: { params: Promise<{ id: string }> }

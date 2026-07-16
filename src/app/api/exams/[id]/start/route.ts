@@ -6,6 +6,33 @@ import { prisma } from "@/lib/prisma";
 
 // workflow state transitions
 
+/**
+ * @swagger
+ * /api/exams/{id}/start:
+ *   post:
+ *     tags: [Exams]
+ *     summary: Teacher (owner) transitions an exam from published to ongoing
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Exam started successfully
+ *       400:
+ *         description: Exam not currently published, or startsAt >= endsAt
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the exam's creator
+ *       404:
+ *         description: Exam not found
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions)

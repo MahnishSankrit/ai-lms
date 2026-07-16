@@ -7,6 +7,34 @@ import { prisma } from "@/lib/prisma";
 
 
 
+/**
+ * @swagger
+ * /api/exams/{id}/publish:
+ *   post:
+ *     tags: [Exams]
+ *     summary: Teacher (owner) publishes a draft exam
+ *     description: Requires startsAt/endsAt already set (startsAt < endsAt) and at least one question attached.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Exam published successfully
+ *       400:
+ *         description: Not in draft state; missing startsAt/endsAt; startsAt >= endsAt; or no questions attached
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the exam's creator
+ *       404:
+ *         description: Exam not found
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions)

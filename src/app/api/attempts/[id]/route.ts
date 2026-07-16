@@ -29,6 +29,29 @@ import { prisma } from "@/lib/prisma";
 
 
 
+/**
+ * @swagger
+ * /api/attempts/{id}:
+ *   get:
+ *     tags: [Attempts]
+ *     summary: Fetch full attempt detail (exam, answers with question data, violations)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Attempt detail
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Student who isn't the attempt owner, or teacher who doesn't own the exam
+ *       404:
+ *         description: Attempt not found
+ */
 export async function GET(req: Request,{ params }: { params: Promise<{ id: string }> }) {
     try {
 

@@ -5,6 +5,24 @@ import { authOptions } from "@/lib/auth";
 
 
 
+/**
+ * @swagger
+ * /api/users/me:
+ *   get:
+ *     tags: [Users]
+ *     summary: Returns the currently logged-in user's own profile
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user profile
+ *       401:
+ *         description: Not logged in
+ *       404:
+ *         description: User no longer exists in DB
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request) {
     try {
         const sessionUser = await getServerSession(authOptions); // this will return the session of the currently logged in user, if there is no user logged in, it will return null

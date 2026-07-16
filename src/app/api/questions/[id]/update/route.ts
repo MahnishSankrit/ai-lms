@@ -5,6 +5,53 @@ import { prisma } from "@/lib/prisma";
 import { createQuestionSchema } from "@/validation/question.schema";
 
 
+/**
+ * @swagger
+ * /api/questions/{id}/update:
+ *   patch:
+ *     tags: [Questions]
+ *     summary: Teacher (owner) updates a question and replaces all its options
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [questionText, type, marks, options]
+ *             properties:
+ *               questionText: { type: string, minLength: 5 }
+ *               type: { type: string, enum: [mcq, true_false, short_answer, multiple_select] }
+ *               marks: { type: number, minimum: 1 }
+ *               difficulty: { type: string }
+ *               explanation: { type: string }
+ *               imageUrl: { type: string }
+ *               options:
+ *                 type: array
+ *                 minItems: 2
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     optionText: { type: string }
+ *                     isCorrect: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Question updated successfully
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the question's creator
+ *       404:
+ *         description: Question not found
+ *       500:
+ *         description: Validation error or server error
+ */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);

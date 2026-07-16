@@ -10,6 +10,41 @@ const memberRemovalSchema = z.object({
 })
 
 
+/**
+ * @swagger
+ * /api/classrooms/{id}/remove-member:
+ *   delete:
+ *     tags: [Classrooms]
+ *     summary: Teacher (owner) removes a student from the classroom
+ *     description: "The `userId` field is actually matched against ClassroomMember.id, not User.id -- pass the membership id from GET /api/classrooms/{id}/members."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId]
+ *             properties:
+ *               userId: { type: string, description: "Actually the ClassroomMember.id" }
+ *     responses:
+ *       200:
+ *         description: Member removed successfully
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       404:
+ *         description: Classroom not found/not owned by you, or membership not found
+ *       500:
+ *         description: Known bug -- this route deletes a Classroom by the membership id instead of deleting the ClassroomMember, which typically 500s
+ */
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);

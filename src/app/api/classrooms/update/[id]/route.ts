@@ -10,6 +10,41 @@ const updateClassroomSchema = z.object({
     description: z.string().optional(),
 })
 
+/**
+ * @swagger
+ * /api/classrooms/update/{id}:
+ *   patch:
+ *     tags: [Classrooms]
+ *     summary: Teacher (owner) updates classroom fields
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string, minLength: 3, maxLength: 100 }
+ *               subject: { type: string, minLength: 2, maxLength: 100 }
+ *               description: { type: string }
+ *     responses:
+ *       200:
+ *         description: Classroom updated successfully
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the classroom owner
+ *       404:
+ *         description: Classroom not found
+ *       500:
+ *         description: Validation error or server error
+ */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     try {
         const session = await getServerSession(authOptions);

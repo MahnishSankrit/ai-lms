@@ -9,6 +9,38 @@ import { ZodError } from "zod";
 // It creates a record in the ExamQuestion junction table, linking an existing question to an existing exam. Before creating the relationship,
 //  the API verifies authentication, ownership of both the exam and question, validates existence of both entities, prevents duplicate mappings, and assigns the correct order within the exam.
 
+/**
+ * @swagger
+ * /api/exam-questions/add:
+ *   post:
+ *     tags: [Exam Questions]
+ *     summary: Attach an existing question (owned by you) to an existing exam (owned by you)
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [examId, quesId]
+ *             properties:
+ *               examId: { type: string }
+ *               quesId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Question added to exam successfully (createExam.id is the examQuestionId)
+ *       400:
+ *         description: Question already attached to this exam
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher; not the exam's creator; or not the question's creator
+ *       404:
+ *         description: Exam not found, or question not found
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);

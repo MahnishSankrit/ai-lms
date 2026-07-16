@@ -4,6 +4,32 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PDFParse } from "pdf-parse";
 
+/**
+ * @swagger
+ * /api/upload/{id}:
+ *   post:
+ *     tags: [AI]
+ *     summary: Re-download a previously uploaded file from Cloudinary and extract its PDF text
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: The uploadId from POST /api/questions/upload
+ *     responses:
+ *       200:
+ *         description: Extracted text
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the upload's owner
+ *       404:
+ *         description: Upload record not found, or teacher not found
+ *       500:
+ *         description: Failed to download from Cloudinary, or failed to extract text
+ */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
     try {
         const session = await getServerSession(authOptions);

@@ -5,6 +5,33 @@ import { prisma } from "@/lib/prisma";
 // import { createQuestionSchema } from "@/validation/question.schema";
 
 
+/**
+ * @swagger
+ * /api/questions/get-questions:
+ *   get:
+ *     tags: [Questions]
+ *     summary: Paginated list of the logged-in teacher's own questions
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200:
+ *         description: Paginated questions list
+ *       400:
+ *         description: Session missing email
+ *       403:
+ *         description: Not a teacher (also triggers when not logged in)
+ *       404:
+ *         description: Teacher not found, or no questions exist for this page
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request){
     try {
         //authentication

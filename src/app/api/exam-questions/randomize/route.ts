@@ -22,6 +22,37 @@ import { ZodError } from "zod";
 // Save Orders
 //  ↓
 // Success
+/**
+ * @swagger
+ * /api/exam-questions/randomize:
+ *   post:
+ *     tags: [Exam Questions]
+ *     summary: Shuffle the order of all questions attached to an exam
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [examId]
+ *             properties:
+ *               examId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Questions randomized successfully
+ *       400:
+ *         description: Missing examId
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the exam's owner
+ *       404:
+ *         description: Exam not found, or exam has no attached questions
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
     try {
         // Authentication

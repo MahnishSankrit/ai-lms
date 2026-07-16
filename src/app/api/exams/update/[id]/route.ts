@@ -7,6 +7,47 @@ import { createExamSchema } from "@/validation/exam.schema";
 
 
 
+/**
+ * @swagger
+ * /api/exams/update/{id}:
+ *   patch:
+ *     tags: [Exams]
+ *     summary: Teacher updates exam fields (partial update)
+ *     description: "Ownership quirk: request is only blocked when the caller is NOT the owner AND the exam status is not draft -- a non-owner can update a draft exam."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: "Partial createExamSchema. Only title, description, status, durationMinutes, classroomId are actually persisted."
+ *             properties:
+ *               title: { type: string }
+ *               description: { type: string }
+ *               status: { type: string, enum: [draft, published, ongoing, completed] }
+ *               durationMinutes: { type: number }
+ *               classroomId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Exam updated successfully
+ *       400:
+ *         description: Empty body (no fields to update)
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       404:
+ *         description: Exam not found
+ *       500:
+ *         description: Validation error or server error
+ */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions)

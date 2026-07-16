@@ -4,6 +4,36 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+/**
+ * @swagger
+ * /api/results/manual-grade:
+ *   patch:
+ *     tags: [Results]
+ *     summary: Teacher manually overrides marks for one answer and recalculates the attempt's total score
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [attemptAnswerId, marksAwarded]
+ *             properties:
+ *               attemptAnswerId: { type: string }
+ *               marksAwarded: { type: number, description: "> 0 marks the answer isCorrect: true" }
+ *     responses:
+ *       200:
+ *         description: Answer graded successfully
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or doesn't own the exam this answer belongs to
+ *       404:
+ *         description: Answer not found, or parent attempt not found
+ *       500:
+ *         description: Server error
+ */
 export async function PATCH(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions);

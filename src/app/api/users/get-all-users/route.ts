@@ -4,6 +4,31 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
 
+/**
+ * @swagger
+ * /api/users/get-all-users:
+ *   get:
+ *     tags: [Users]
+ *     summary: Admin -- paginated list of all users
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200:
+ *         description: Paginated users list
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not an admin
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request) {
     try {
         const user = await getServerSession(authOptions);

@@ -5,6 +5,33 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 
+/**
+ * @swagger
+ * /api/results/students:
+ *   get:
+ *     tags: [Results]
+ *     summary: Student's own paginated results across all submitted exams
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200:
+ *         description: Paginated results
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a student
+ *       404:
+ *         description: No submitted results yet
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions);

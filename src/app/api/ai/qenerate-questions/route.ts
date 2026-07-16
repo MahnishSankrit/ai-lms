@@ -6,6 +6,36 @@ import { generateQuestionSchema } from "@/validation/generate-question.schema";
 import { ZodError } from "zod";
 // import { constrainedMemory } from "process";
 
+/**
+ * @swagger
+ * /api/ai/qenerate-questions:
+ *   post:
+ *     tags: [AI]
+ *     summary: Generate AI questions from study-material text via Gemini
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [text]
+ *             properties:
+ *               text: { type: string, minLength: 50, description: "Study material, e.g. output of /api/ai/extract-pdf" }
+ *               numberOfQuestions: { type: number, minimum: 1, maximum: 100, default: 10 }
+ *     responses:
+ *       200:
+ *         description: "Questions generated successfully (array shape is compatible with POST /api/questions/bulk)"
+ *       400:
+ *         description: text < 50 chars, or numberOfQuestions out of range
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       500:
+ *         description: Gemini call failed, or response wasn't valid/parsable JSON
+ */
 export async function POST(req: Request) {
     try {
 

@@ -6,6 +6,31 @@ import { createQuestionSchema } from "@/validation/question.schema";
 import { ZodError } from "zod";
 
 
+/**
+ * @swagger
+ * /api/questions/{id}/details:
+ *   get:
+ *     tags: [Questions]
+ *     summary: Fetch a single question (with options)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Question with options
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: "Not a teacher, or not this question's creator (returned as { message } for the ownership case)"
+ *       404:
+ *         description: Question not found
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);

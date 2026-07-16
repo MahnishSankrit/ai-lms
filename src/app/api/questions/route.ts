@@ -6,6 +6,51 @@ import { createQuestionSchema } from "@/validation/question.schema";
 import { ZodError } from "zod";
 
 
+/**
+ * @swagger
+ * /api/questions:
+ *   post:
+ *     tags: [Questions]
+ *     summary: Teacher creates a question (with options) in their question bank
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [questionText, type, marks, options]
+ *             properties:
+ *               questionText: { type: string, minLength: 5, example: "What is the capital of France?" }
+ *               type: { type: string, enum: [mcq, true_false, short_answer, multiple_select] }
+ *               marks: { type: number, minimum: 1, example: 2 }
+ *               difficulty: { type: string, example: Easy }
+ *               explanation: { type: string, example: "Paris has been the capital since 987 AD." }
+ *               imageUrl: { type: string }
+ *               options:
+ *                 type: array
+ *                 minItems: 2
+ *                 items:
+ *                   type: object
+ *                   required: [optionText, isCorrect]
+ *                   properties:
+ *                     optionText: { type: string, example: Paris }
+ *                     isCorrect: { type: boolean, example: true }
+ *     responses:
+ *       201:
+ *         description: Question created successfully
+ *       400:
+ *         description: Zod validation error (returned as { error, details })
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher; account suspended; or account not verified
+ *       404:
+ *         description: Teacher not found
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request){
     try {
         const session  = await getServerSession(authOptions);

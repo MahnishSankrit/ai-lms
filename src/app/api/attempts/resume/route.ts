@@ -3,6 +3,37 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * @swagger
+ * /api/attempts/resume:
+ *   post:
+ *     tags: [Attempts]
+ *     summary: Student resumes an in-progress attempt; returns remaining time; auto-submits if time expired
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [examId]
+ *             properties:
+ *               examId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Attempt resumed successfully (attemptId, remainingMinutes, answers)
+ *       400:
+ *         description: Missing examId; attempt already submitted; or time expired (auto-transitions to auto_submitted)
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a student
+ *       404:
+ *         description: Exam not found, or no attempt exists yet (call start first)
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
     try {
 

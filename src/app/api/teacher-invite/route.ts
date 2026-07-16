@@ -12,6 +12,33 @@ const inviteTeacherSchema = z.object({
 })
 
 
+/**
+ * @swagger
+ * /api/teacher-invite:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Admin invites a new teacher by email
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email, example: newteacher@example.com }
+ *     responses:
+ *       200:
+ *         description: Invite sent. Copy the token printed to the server console log.
+ *       400:
+ *         description: User already exists, or an unused invite already exists for this email
+ *       403:
+ *         description: Not logged in as admin
+ *       500:
+ *         description: Invalid email or email/DB error
+ */
 export async function POST(req: Request){
     try {
         const session = await getServerSession(authOptions);

@@ -3,6 +3,33 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+/**
+ * @swagger
+ * /api/results/leaderboard:
+ *   get:
+ *     tags: [Results]
+ *     summary: Ranked leaderboard of all submitted attempts for one exam
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: examId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Leaderboard with rank, studentName, score, submittedAt
+ *       400:
+ *         description: Missing examId
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Unsupported role; teacher doesn't own the exam; or student not enrolled
+ *       404:
+ *         description: Exam not found, or no submitted attempts yet
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: NextRequest) {
     try {
 

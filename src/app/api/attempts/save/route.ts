@@ -6,6 +6,37 @@ import { prisma } from "@/lib/prisma";
 
 
 
+/**
+ * @swagger
+ * /api/attempts/save:
+ *   post:
+ *     tags: [Attempts]
+ *     summary: Student saves/updates one answer during an in-progress attempt (autosave)
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [attemptId, questionId]
+ *             properties:
+ *               attemptId: { type: string }
+ *               questionId: { type: string }
+ *               selectedOptionId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Answers saved successfully
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a student, or attempt doesn't belong to you
+ *       404:
+ *         description: Attempt not found
+ *       500:
+ *         description: Invalid questionId/selectedOptionId, or other server error
+ */
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions)

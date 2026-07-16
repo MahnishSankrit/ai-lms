@@ -26,6 +26,37 @@ import { prisma } from "@/lib/prisma";
 // Submitted
 
 
+/**
+ * @swagger
+ * /api/attempts/submit:
+ *   post:
+ *     tags: [Attempts]
+ *     summary: Student submits an in-progress attempt; server grades objective answers and computes the score
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [attemptId]
+ *             properties:
+ *               attemptId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Exam submitted successfully (score returned)
+ *       400:
+ *         description: Missing attemptId, or attempt not in_progress
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a student, or attempt doesn't belong to you
+ *       404:
+ *         description: Attempt not found
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
     try {
 

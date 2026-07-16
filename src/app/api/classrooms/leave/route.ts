@@ -11,6 +11,35 @@ const leaveClassroomSchema = z.object({
     classroomId: z.string(),
 })
 
+/**
+ * @swagger
+ * /api/classrooms/leave:
+ *   post:
+ *     tags: [Classrooms]
+ *     summary: Student leaves a classroom
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [classroomId]
+ *             properties:
+ *               classroomId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Left the classroom successfully
+ *       400:
+ *         description: Not currently a member of that classroom
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a student
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);

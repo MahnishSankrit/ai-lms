@@ -8,6 +8,33 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 
+/**
+ * @swagger
+ * /api/results/{id}:
+ *   get:
+ *     tags: [Results]
+ *     summary: Fetch the final result/report card for one submitted attempt
+ *     description: "The path parameter is an attemptId, despite living under /api/results/."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: attemptId
+ *     responses:
+ *       200:
+ *         description: Result (score, percentage, pass, violations, answers)
+ *       400:
+ *         description: Attempt hasn't been submitted yet
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Student who isn't the owner; teacher who doesn't own the exam; or unsupported role
+ *       404:
+ *         description: Attempt not found
+ */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);

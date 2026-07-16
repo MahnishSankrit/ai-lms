@@ -12,6 +12,44 @@ const RegisterSchema = z.object({
 
 
 
+/**
+ * @swagger
+ * /api/register:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Register a new student account
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email: { type: string, format: email, example: student1@example.com }
+ *               password: { type: string, minLength: 6, example: student123 }
+ *     responses:
+ *       201:
+ *         description: User created. Verification email sent.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string, example: User created successfully }
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     email: { type: string }
+ *                     role: { type: string, example: student }
+ *                     isVerified: { type: boolean, example: false }
+ *       400:
+ *         description: User already exists
+ *       500:
+ *         description: Validation error or server error
+ */
 export async function POST(req: Request){
     try {
         const body = await req.json();

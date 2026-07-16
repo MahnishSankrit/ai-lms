@@ -8,6 +8,26 @@ import { authOptions } from "@/lib/auth";
 
 
 
+/**
+ * @swagger
+ * /api/results/classroom:
+ *   get:
+ *     tags: [Results]
+ *     summary: Teacher-wide analytics across all of the teacher's classrooms
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Aggregate results (totalAttempts, averageScore, passRate, per-classroom summary)
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       404:
+ *         description: Teacher has no classrooms
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions);

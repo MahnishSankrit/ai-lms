@@ -3,6 +3,37 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * @swagger
+ * /api/attempts/force-submit:
+ *   post:
+ *     tags: [Attempts]
+ *     summary: Force-submit an attempt (e.g. proctoring violation), optionally logging a Violation
+ *     description: "No role or ownership check -- any authenticated user can force-submit any in-progress attempt."
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [attemptId]
+ *             properties:
+ *               attemptId: { type: string }
+ *               reason: { type: string, description: "If present, logs a Violation with type=tab_switch (hardcoded)", example: "Tab switch detected 3 times" }
+ *     responses:
+ *       200:
+ *         description: Attempt force submitted (score returned)
+ *       400:
+ *         description: Missing attemptId, or attempt already submitted
+ *       401:
+ *         description: Not logged in
+ *       404:
+ *         description: Attempt not found
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
     try {
 

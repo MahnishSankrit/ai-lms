@@ -22,6 +22,44 @@ import { ZodError } from "zod";
 //  ↓
 // Success
 
+/**
+ * @swagger
+ * /api/exam-questions/reorder:
+ *   patch:
+ *     tags: [Exam Questions]
+ *     summary: Bulk-update the order field for a set of exam-question links
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [examId, questions]
+ *             properties:
+ *               examId: { type: string }
+ *               questions:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     examQuestionId: { type: string }
+ *                     order: { type: number }
+ *     responses:
+ *       200:
+ *         description: Question order updated successfully
+ *       400:
+ *         description: examId missing, or questions missing/not an array
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the exam's owner
+ *       404:
+ *         description: Exam not found
+ *       500:
+ *         description: Any examQuestionId in the array doesn't exist, or other server error
+ */
 export async function PATCH(req: Request) {
     try {
         const session = await getServerSession(authOptions);

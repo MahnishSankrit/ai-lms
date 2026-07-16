@@ -9,6 +9,24 @@ import { prisma } from "@/lib/prisma";
 
 // condtinal checking for the user to fetch the classrooms like for teacher and like for the students
 
+/**
+ * @swagger
+ * /api/classrooms/get-classrooms:
+ *   get:
+ *     tags: [Classrooms]
+ *     summary: List classrooms (teacher's own, or student's joined)
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of classrooms
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Role is neither teacher nor student
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions);

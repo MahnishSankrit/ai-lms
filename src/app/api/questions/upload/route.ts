@@ -5,6 +5,42 @@ import { prisma } from "@/lib/prisma";
 // validation not needed in this route; file import only
 
 
+/**
+ * @swagger
+ * /api/questions/upload:
+ *   post:
+ *     tags: [Questions]
+ *     summary: Upload a study-material file (PDF/DOCX/PPTX) to Cloudinary and record it
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file]
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: PDF, DOCX, or PPTX, max 10MB
+ *     responses:
+ *       201:
+ *         description: File uploaded successfully (upload.id is the uploadId)
+ *       400:
+ *         description: No file, wrong field name, disallowed MIME type, or file > 10MB
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       404:
+ *         description: Teacher not found
+ *       500:
+ *         description: Server error
+ *       502:
+ *         description: Cloudinary upload failed
+ */
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions)

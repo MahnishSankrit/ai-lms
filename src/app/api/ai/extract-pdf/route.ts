@@ -5,6 +5,38 @@ import { authOptions } from "@/lib/auth";
 import { PDFParse } from "pdf-parse";
 
 
+/**
+ * @swagger
+ * /api/ai/extract-pdf:
+ *   post:
+ *     tags: [AI]
+ *     summary: Extract raw text from an uploaded PDF (in-memory, not persisted)
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [pdf]
+ *             properties:
+ *               pdf:
+ *                 type: string
+ *                 format: binary
+ *                 description: A .pdf file, max 10MB
+ *     responses:
+ *       200:
+ *         description: PDF text extracted successfully
+ *       400:
+ *         description: No/wrong file, wrong MIME type, too large, invalid PDF header, or no extractable text
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       500:
+ *         description: Parsing error
+ */
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);

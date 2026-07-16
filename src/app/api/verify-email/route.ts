@@ -1,5 +1,30 @@
 import { prisma } from "@/lib/prisma";
 
+/**
+ * @swagger
+ * /api/verify-email:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Verify a user's email using the token from registration
+ *     security: []
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema: { type: string }
+ *         description: Value of users.verificationToken for the registered user
+ *     responses:
+ *       200:
+ *         description: Email verified
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *       400:
+ *         description: Missing token, or no user matches it
+ */
 export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);

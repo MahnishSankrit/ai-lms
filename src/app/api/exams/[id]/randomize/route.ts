@@ -31,6 +31,33 @@ function shuffleArray<T>(array: T[]) {
 
 
 
+/**
+ * @swagger
+ * /api/exams/{id}/randomize:
+ *   post:
+ *     tags: [Exams]
+ *     summary: Teacher (owner) shuffles question order and each question's option order (draft-only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Exam questions randomized successfully
+ *       400:
+ *         description: "Only exams in draft state can be randomized (error key is `message`, not `error`)"
+ *       401:
+ *         description: "Not authenticated (error key is `message`, not `error`)"
+ *       403:
+ *         description: "Not a teacher, or not the owner (error key is `message`, not `error`)"
+ *       404:
+ *         description: "Exam not found (error key is `message`, not `error`)"
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions)

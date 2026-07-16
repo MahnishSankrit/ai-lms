@@ -7,6 +7,37 @@ import { ZodError } from "zod";
 
 // teacher remove the question fromg the exam
 
+/**
+ * @swagger
+ * /api/exam-questions/remove:
+ *   delete:
+ *     tags: [Exam Questions]
+ *     summary: Detach a question from an exam
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [examQuestionId]
+ *             properties:
+ *               examQuestionId: { type: string }
+ *     responses:
+ *       200:
+ *         description: Exam question removed successfully
+ *       400:
+ *         description: Missing examQuestionId
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the exam's owner
+ *       404:
+ *         description: Exam-question link not found, or its parent exam not found
+ *       500:
+ *         description: Server error
+ */
 export async function DELETE(req: Request) {
     try {
         const session = await getServerSession(authOptions);

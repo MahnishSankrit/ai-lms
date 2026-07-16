@@ -3,6 +3,31 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+/**
+ * @swagger
+ * /api/exams/{id}/duplicate:
+ *   post:
+ *     tags: [Exams]
+ *     summary: Teacher (owner) clones an exam and its question links into a new draft exam
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       201:
+ *         description: Exam duplicated successfully (new exam status is draft)
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the exam's creator
+ *       404:
+ *         description: Exam not found
+ *       500:
+ *         description: Server error
+ */
 export async function POST(
     req: Request,
     { params }: { params: Promise<{ id: string }> }

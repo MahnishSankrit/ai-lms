@@ -5,6 +5,31 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 
+/**
+ * @swagger
+ * /api/exams/{id}/results:
+ *   get:
+ *     tags: [Exams]
+ *     summary: Teacher (owner) views aggregate statistics and per-student attempts for an exam
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Exam stats (totalAttempts, averageScore, highestScore, lowestScore, passcount, failcount) and per-attempt list
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the exam's creator
+ *       404:
+ *         description: Exam not found
+ *       500:
+ *         description: Server error
+ */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions)

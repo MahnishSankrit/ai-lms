@@ -9,6 +9,44 @@ const teacherRegisterSchema = z.object({
 });
 
 
+/**
+ * @swagger
+ * /api/teacher-register:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Complete teacher onboarding using an invite token
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, name, password]
+ *             properties:
+ *               token: { type: string, description: "Invite token from POST /api/teacher-invite (server console log)" }
+ *               name: { type: string, minLength: 3, example: Jane Doe }
+ *               password: { type: string, minLength: 6, example: teacher123 }
+ *     responses:
+ *       201:
+ *         description: Teacher registered (auto-verified)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     email: { type: string }
+ *                     role: { type: string, example: teacher }
+ *       400:
+ *         description: Token invalid/used/expired, or a user already exists for the invite's email
+ *       500:
+ *         description: Validation error or server error
+ */
 export async function POST(req: Request) {
     try {
         const body = await req.json();

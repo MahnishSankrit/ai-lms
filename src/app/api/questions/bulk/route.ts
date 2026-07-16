@@ -18,6 +18,60 @@ import { prisma } from "@/lib/prisma";
 import { createQuestionSchema } from "@/validation/question.schema";
 import { ZodError } from "zod";
 
+/**
+ * @swagger
+ * /api/questions/bulk:
+ *   post:
+ *     tags: [Questions]
+ *     summary: Create multiple questions (with options) in one transaction
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               required: [questionText, type, marks, options]
+ *               properties:
+ *                 questionText: { type: string, minLength: 5 }
+ *                 type: { type: string, enum: [mcq, true_false, short_answer, multiple_select] }
+ *                 marks: { type: number, minimum: 1 }
+ *                 difficulty: { type: string }
+ *                 explanation: { type: string }
+ *                 imageUrl: { type: string }
+ *                 options:
+ *                   type: array
+ *                   minItems: 2
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       optionText: { type: string }
+ *                       isCorrect: { type: boolean }
+ *           example:
+ *             - questionText: "What is 2 + 2?"
+ *               type: mcq
+ *               marks: 1
+ *               difficulty: Easy
+ *               options:
+ *                 - { optionText: "3", isCorrect: false }
+ *                 - { optionText: "4", isCorrect: true }
+ *     responses:
+ *       201:
+ *         description: "Questions created successfully (returns only totalQuestions, not the created rows)"
+ *       400:
+ *         description: Zod array validation error
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or account suspended
+ *       404:
+ *         description: Teacher not found
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
     try {
 

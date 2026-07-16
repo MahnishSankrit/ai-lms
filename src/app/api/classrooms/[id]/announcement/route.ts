@@ -11,6 +11,41 @@ const announcementSchema = z.object({
     content: z.string(),
 })
 
+/**
+ * @swagger
+ * /api/classrooms/{id}/announcement:
+ *   post:
+ *     tags: [Classrooms]
+ *     summary: Teacher (owner) posts an announcement (notifies all members)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, content]
+ *             properties:
+ *               title: { type: string, example: "Midterm Schedule Released" }
+ *               content: { type: string, example: "The midterm exam will be held on 2026-08-01." }
+ *     responses:
+ *       201:
+ *         description: Announcement created
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       404:
+ *         description: Classroom not found or not owned by you
+ *       500:
+ *         description: Validation error or server error
+ */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);

@@ -6,6 +6,31 @@ import { createQuestionSchema } from "@/validation/question.schema";
 import { ZodError } from "zod";
 
 
+/**
+ * @swagger
+ * /api/questions/{id}/delete:
+ *   delete:
+ *     tags: [Questions]
+ *     summary: Teacher (owner) deletes a question
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Question deleted successfully
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher, or not the question's creator
+ *       404:
+ *         description: Question not found
+ *       500:
+ *         description: "Deleting a question referenced by an ExamQuestion/AttemptAnswer may fail (no cascade), or other server error"
+ */
 export async function DELETE(req: Request, {params} : {params: Promise<{ id: string }>}){
     try {
         const session = await getServerSession(authOptions)

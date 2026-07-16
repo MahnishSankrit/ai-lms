@@ -15,6 +15,48 @@ export const createClassroomSchema = z.object({
 
 });
 
+/**
+ * @swagger
+ * /api/classrooms:
+ *   post:
+ *     tags: [Classrooms]
+ *     summary: Teacher creates a classroom
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, subject]
+ *             properties:
+ *               name: { type: string, minLength: 3, maxLength: 100, example: "Grade 10 Mathematics" }
+ *               subject: { type: string, minLength: 2, maxLength: 100, example: Mathematics }
+ *               description: { type: string, example: "Algebra and Geometry fundamentals for Grade 10" }
+ *     responses:
+ *       201:
+ *         description: Classroom created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 classroom:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     joinCode: { type: string, example: a1b2c3 }
+ *       401:
+ *         description: Not logged in
+ *       403:
+ *         description: Not a teacher
+ *       404:
+ *         description: Teacher not found for session email
+ *       500:
+ *         description: Validation error or server error
+ */
 export async function POST(req: Request) {
     try {
         const user = await getServerSession(authOptions);
