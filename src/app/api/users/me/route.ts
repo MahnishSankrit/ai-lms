@@ -14,7 +14,9 @@ export async function GET(req: Request) {
                 {status: 401}
             )
         }
+const session = await getServerSession(authOptions);
 
+console.log("SESSION =", session);
         // this is the email of the currently logged in user, we can use this email to fetch the user details from the database
         const email = sessionUser.user?.email;
         if (!email) {

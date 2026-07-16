@@ -1,9 +1,9 @@
 
-import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import * as z from "zod";
 import { encode } from "next-auth/jwt";
+import { verifyPassword } from "@/lib/auth";
 
 const userSchema = z.object({
     email: z.string().email(),
@@ -25,7 +25,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         if (!parsedBody.success) {
             return NextResponse.json(
                 { error: "Invalid email or password" },
-                {status: 400}
+                { status: 400 }
             )
         }
 
@@ -36,25 +36,25 @@ export async function POST(req: Request): Promise<NextResponse> {
             }
         })
 
-        if(!user){
+        if (!user) {
             return NextResponse.json(
-                {error: "User not found"},
-                {status: 404}
+                { error: "User not found" },
+                { status: 404 }
             )
         }
         const emailVerified = user.isVerified;
 
-        if(!emailVerified){
+        if (!emailVerified) {
             return NextResponse.json(
-                {error: "Email not verified"},
-                {status: 400}
+                { error: "Email not verified" },
+                { status: 400 }
             )
         }
-        const isPasswordCorrect = await bcrypt.compare(loginPassword, user.password)
-        if(!isPasswordCorrect){
+        const isPasswordCorrect = await verifyPassword(loginPassword, user.password)
+        if (!isPasswordCorrect) {
             return NextResponse.json(
-                {error: "Invalid password"},
-                {status: 400}
+                { error: "Invalid password" },
+                { status: 400 }
             )
         }
 
@@ -71,8 +71,8 @@ export async function POST(req: Request): Promise<NextResponse> {
         const { password: passwordHash, ...userWithoutPassword } = user;
         void passwordHash;
         const response = NextResponse.json(
-            {message: "Login successful", user: userWithoutPassword},
-            {status: 200}
+            { message: "Login successful", user: userWithoutPassword },
+            { status: 200 }
         );
 
         response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
@@ -88,8 +88,8 @@ export async function POST(req: Request): Promise<NextResponse> {
     } catch (error) {
         console.error("Error in login:", error);
         return NextResponse.json(
-            {error: "Internal server error"},
-            {status: 500}
+            { error: "Internal server error" },
+            { status: 500 }
         )
     }
 }

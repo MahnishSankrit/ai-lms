@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { aiService } from "@/services/ai.service";
 import { generateQuestionSchema } from "@/validation/generate-question.schema";
 import { ZodError } from "zod";
-import { constrainedMemory } from "process";
+// import { constrainedMemory } from "process";
 
 export async function POST(req: Request) {
     try {
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
             return NextResponse.json(
                 {
                     error: "Invalid request body",
-                    
+
                 },
                 {
                     status: 400,

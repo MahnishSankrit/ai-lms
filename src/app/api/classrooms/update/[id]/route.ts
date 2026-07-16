@@ -10,7 +10,7 @@ const updateClassroomSchema = z.object({
     description: z.string().optional(),
 })
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     try {
         const session = await getServerSession(authOptions);
         if (!session) {

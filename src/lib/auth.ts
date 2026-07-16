@@ -7,6 +7,14 @@ import bcrypt from "bcryptjs";
 
 import { NextAuthOptions } from "next-auth";
 
+export async function verifyPassword(loginPassword: string, storedPassword: string) {
+    if (storedPassword.startsWith("$2")) {
+        return bcrypt.compare(loginPassword, storedPassword);
+    }
+
+    return loginPassword === storedPassword;
+}
+
 export const authOptions: NextAuthOptions = {
 
     adapter: PrismaAdapter(prisma),
@@ -42,10 +50,7 @@ export const authOptions: NextAuthOptions = {
                     throw new Error("User not found");
                 }
 
-                const isPasswordCorrect = await bcrypt.compare(
-                    credentials.password,
-                    user.password
-                );
+                const isPasswordCorrect = await verifyPassword(credentials.password, user.password);
 
                 if (!isPasswordCorrect) {
                     throw new Error("Invalid password");
@@ -57,11 +62,16 @@ export const authOptions: NextAuthOptions = {
     ],
 
     callbacks: {
-
         async jwt({ token, user }) {
 
             if (user) {
+                token.id = user.id;
                 token.role = user.role;
+                token.email = user.email;
+            }
+
+            if (!token.id && token.sub) {
+                token.id = token.sub;
             }
 
             return token;
@@ -70,11 +80,14 @@ export const authOptions: NextAuthOptions = {
         async session({ session, token }) {
 
             if (session.user) {
-                session.user.role = token.role;
+                session.user.id = token.id as string;
+                session.user.role = token.role as "student" | "teacher" | "admin";
+                session.user.email = token.email as string;
             }
 
             return session;
         },
+
     },
 
     secret: process.env.NEXTAUTH_SECRET,

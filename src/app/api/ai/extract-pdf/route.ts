@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 // import { prisma } from "@/lib/prisma";
+import { PDFParse } from "pdf-parse";
 
 
 export async function POST(req: Request) {
@@ -64,9 +65,8 @@ export async function POST(req: Request) {
 
 
         // read the pdf file as an array buffer
-        const pdfModule = await import("pdf-parse") as Record<string, unknown>;
-        const pdf = pdfModule.default as (buffer: Buffer) => Promise<{ text: string }>;
-        const data = await pdf(buffer);
+        const pdf = new PDFParse({ data: buffer });
+        const data = await pdf.getText();
 
         if (!data.text.trim()) {
             return NextResponse.json(
