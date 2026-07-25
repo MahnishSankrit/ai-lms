@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LoginPage from "@/app/(app)/Login/Page";
 
 export default function Home() {
   return (
@@ -21,7 +22,7 @@ export default function Home() {
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/login"
+              href="/Login"
               className="inline-flex items-center justify-center rounded-md bg-blue-700 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-800"
             >
               Login
@@ -39,3 +40,4 @@ export default function Home() {
     </main>
   );
 }
+``
