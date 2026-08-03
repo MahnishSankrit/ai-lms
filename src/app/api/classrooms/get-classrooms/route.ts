@@ -64,7 +64,7 @@ export async function GET(req: Request) {
                 where: {
                     members: {
                         some: {
-                            id: session.user.id,
+                            userId: session.user.id,
                         }
                     }
                 },

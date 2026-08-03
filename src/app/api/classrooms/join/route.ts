@@ -16,14 +16,14 @@ import { authOptions } from "@/lib/auth";
  *         application/json:
  *           schema:
  *             type: object
- *             required: [classroomId]
+ *             required: [joinCode]
  *             properties:
- *               classroomId: { type: string }
+ *               joinCode: { type: string, example: sq7tso }
  *     responses:
  *       200:
  *         description: Joined classroom successfully
  *       400:
- *         description: Missing classroom id, or already a member
+ *         description: Missing join code, or already a member
  *       401:
  *         description: Not logged in
  *       403:
@@ -56,17 +56,19 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const classroomid = typeof body === "string" ? body : body.classroomId || body.id;
-        if (!classroomid) {
+        // Students only ever see the short joinCode (e.g. "sq7tso"), never the
+        // classroom's real database id, so that's what we look up by here.
+        const joinCode = typeof body === "string" ? body : body.joinCode || body.classroomId || body.id;
+        if (!joinCode) {
             return NextResponse.json(
-                { error: "Classroom ID is required" },
+                { error: "Join code is required" },
                 { status: 400 }
             );
         }
 
         const classroom = await prisma.classroom.findUnique({
             where: {
-                id: classroomid,
+                joinCode,
             },
         });
         if(!classroom){
@@ -79,7 +81,7 @@ export async function POST(req: Request) {
         // check if the user is already a member of the classroom
         const isMember = await prisma.classroomMember.findFirst({
             where: {
-                classroomId: classroomid,
+                classroomId: classroom.id,
                 userId: session.user.id,
             }
         });
@@ -93,7 +95,7 @@ export async function POST(req: Request) {
 
         await prisma.classroomMember.create({
             data: {
-                classroomId: classroomid,
+                classroomId: classroom.id,
                 userId: session.user.id,
             }
         });

@@ -30,7 +30,7 @@ import { PDFParse } from "pdf-parse";
  *       500:
  *         description: Failed to download from Cloudinary, or failed to extract text
  */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);
         if (!session) {

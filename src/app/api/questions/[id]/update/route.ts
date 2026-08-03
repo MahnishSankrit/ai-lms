@@ -138,6 +138,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
                     questionText: validatedBody.questionText,
                     explanation: validatedBody.explanation,
                     imageUrl: validatedBody.imageUrl,
+                    type: validatedBody.type,
+                    marks: validatedBody.marks,
+                    difficulty: validatedBody.difficulty,
                 },
             });
 
