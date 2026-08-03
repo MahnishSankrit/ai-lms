@@ -4,6 +4,18 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+
 function ResetPasswordContent() {
     const searchParams = useSearchParams();
     const token = searchParams.get("token");
@@ -51,82 +63,85 @@ function ResetPasswordContent() {
     }
 
     return (
-        <main className="min-h-screen bg-slate-50 text-slate-900">
-            <section className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-12">
-                <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-700">
-                    AI Learning Management System
-                </p>
-                <h1 className="text-2xl font-bold">Set a new password</h1>
+        <main className="flex min-h-screen items-center justify-center bg-muted/40 px-6 py-12">
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <p className="text-sm font-semibold uppercase tracking-wide text-primary">
+                        AI Learning Management System
+                    </p>
+                    <CardTitle className="text-2xl">Set a new password</CardTitle>
+                    {token && !submitted && (
+                        <CardDescription>Choose a new password for your account.</CardDescription>
+                    )}
+                </CardHeader>
 
                 {!token ? (
-                    <div className="mt-8 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        This reset link is missing a token. Request a new one from the{" "}
-                        <Link href="/forgot-password" className="font-semibold underline">
-                            forgot password
-                        </Link>{" "}
-                        page.
-                    </div>
+                    <CardContent>
+                        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                            This reset link is missing a token. Request a new one from the{" "}
+                            <Link href="/forgot-password" className="font-semibold underline">
+                                forgot password
+                            </Link>{" "}
+                            page.
+                        </div>
+                    </CardContent>
                 ) : submitted ? (
-                    <div className="mt-8 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-                        Your password has been reset. You can now log in with your new password.
-                    </div>
+                    <CardContent>
+                        <div className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+                            Your password has been reset. You can now log in with your new password.
+                        </div>
+                    </CardContent>
                 ) : (
-                    <form onSubmit={handleResetPassword} className="mt-8 flex flex-col gap-4">
-                        {error && (
-                            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                                {error}
+                    <form onSubmit={handleResetPassword}>
+                        <CardContent className="flex flex-col gap-4">
+                            {error && (
+                                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="newPassword">New password</Label>
+                                <Input
+                                    type="password"
+                                    id="newPassword"
+                                    placeholder="At least 6 characters"
+                                    required
+                                    minLength={6}
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                />
                             </div>
-                        )}
 
-                        <div className="flex flex-col gap-1.5">
-                            <label htmlFor="newPassword" className="text-sm font-medium text-slate-700">
-                                New password
-                            </label>
-                            <input
-                                type="password"
-                                id="newPassword"
-                                placeholder="At least 6 characters"
-                                required
-                                minLength={6}
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                            />
-                        </div>
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="confirmPassword">Confirm new password</Label>
+                                <Input
+                                    type="password"
+                                    id="confirmPassword"
+                                    placeholder="Re-enter password"
+                                    required
+                                    minLength={6}
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                />
+                            </div>
+                        </CardContent>
 
-                        <div className="flex flex-col gap-1.5">
-                            <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
-                                Confirm new password
-                            </label>
-                            <input
-                                type="password"
-                                id="confirmPassword"
-                                placeholder="Re-enter password"
-                                required
-                                minLength={6}
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="mt-2 inline-flex items-center justify-center rounded-md bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            {loading ? "Resetting..." : "Reset password"}
-                        </button>
+                        <CardFooter>
+                            <Button type="submit" disabled={loading} className="w-full">
+                                {loading ? "Resetting..." : "Reset password"}
+                            </Button>
+                        </CardFooter>
                     </form>
                 )}
 
-                <p className="mt-6 text-center text-sm text-slate-600">
+                <p className="pb-6 text-center text-sm text-muted-foreground">
                     Remembered your password?{" "}
-                    <Link href="/login" className="font-semibold text-blue-700 hover:underline">
+                    <Link href="/login" className="font-semibold text-primary hover:underline">
                         Login
                     </Link>
                 </p>
-            </section>
+            </Card>
         </main>
     )
 }

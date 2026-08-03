@@ -4,6 +4,9 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 type Status = "verifying" | "success" | "error";
 
 function VerifyEmailContent() {
@@ -33,38 +36,37 @@ function VerifyEmailContent() {
     }, [token]);
 
     return (
-        <main className="min-h-screen bg-slate-50 text-slate-900">
-            <section className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-12">
-                <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-700">
-                    AI Learning Management System
-                </p>
-                <h1 className="text-2xl font-bold">Email verification</h1>
+        <main className="flex min-h-screen items-center justify-center bg-muted/40 px-6 py-12">
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <p className="text-sm font-semibold uppercase tracking-wide text-primary">
+                        AI Learning Management System
+                    </p>
+                    <CardTitle className="text-2xl">Email verification</CardTitle>
+                </CardHeader>
 
-                {status === "verifying" && (
-                    <div className="mt-8 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                        Verifying your email...
-                    </div>
-                )}
+                <CardContent className="flex flex-col gap-4">
+                    {status === "verifying" && (
+                        <div className="rounded-md border bg-muted px-4 py-3 text-sm text-muted-foreground">
+                            Verifying your email...
+                        </div>
+                    )}
 
-                {status === "success" && (
-                    <div className="mt-8 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-                        Your email has been verified. You can now log in.
-                    </div>
-                )}
+                    {status === "success" && (
+                        <div className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+                            Your email has been verified. You can now log in.
+                        </div>
+                    )}
 
-                {status === "error" && (
-                    <div className="mt-8 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        {error}
-                    </div>
-                )}
+                    {status === "error" && (
+                        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                            {error}
+                        </div>
+                    )}
 
-                <Link
-                    href="/login"
-                    className="mt-6 inline-flex items-center justify-center rounded-md bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
-                >
-                    Go to login
-                </Link>
-            </section>
+                    <Button render={<Link href="/login" />}>Go to login</Button>
+                </CardContent>
+            </Card>
         </main>
     )
 }

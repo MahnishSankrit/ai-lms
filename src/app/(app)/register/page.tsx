@@ -6,6 +6,18 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+
 export default function RegisterPage() {
     const router = useRouter();
 
@@ -46,7 +58,7 @@ export default function RegisterPage() {
                 return;
             }
 
-            router.push("/student/dashboard");
+            router.push("/student");
             router.refresh();
         } catch (error) {
             console.error("Error during registration:", error);
@@ -57,82 +69,76 @@ export default function RegisterPage() {
     }
 
     return (
-        <main className="min-h-screen bg-slate-50 text-slate-900">
-            <section className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-12">
-                <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-700">
-                    AI Learning Management System
-                </p>
-                <h1 className="text-2xl font-bold">Create your student account</h1>
+        <main className="flex min-h-screen items-center justify-center bg-muted/40 px-6 py-12">
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <p className="text-sm font-semibold uppercase tracking-wide text-primary">
+                        AI Learning Management System
+                    </p>
+                    <CardTitle className="text-2xl">Create your student account</CardTitle>
+                    <CardDescription>Takes less than a minute.</CardDescription>
+                </CardHeader>
 
-                <form onSubmit={handleRegister} className="mt-8 flex flex-col gap-4">
-                    {error && (
-                        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                            {error}
+                <form onSubmit={handleRegister}>
+                    <CardContent className="flex flex-col gap-4">
+                        {error && (
+                            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="flex flex-col gap-1.5">
+                            <Label htmlFor="name">Name</Label>
+                            <Input
+                                type="text"
+                                id="name"
+                                placeholder="Your name"
+                                required
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
                         </div>
-                    )}
 
-                    <div className="flex flex-col gap-1.5">
-                        <label htmlFor="name" className="text-sm font-medium text-slate-700">
-                            Name
-                        </label>
-                        <input
-                            type="text"
-                            id="name"
-                            placeholder="Your name"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                        />
-                    </div>
+                        <div className="flex flex-col gap-1.5">
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                type="email"
+                                id="email"
+                                placeholder="you@example.com"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                        </div>
 
-                    <div className="flex flex-col gap-1.5">
-                        <label htmlFor="email" className="text-sm font-medium text-slate-700">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            id="email"
-                            placeholder="you@example.com"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                        />
-                    </div>
+                        <div className="flex flex-col gap-1.5">
+                            <Label htmlFor="password">Password</Label>
+                            <Input
+                                type="password"
+                                id="password"
+                                placeholder="At least 6 characters"
+                                required
+                                minLength={6}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                        </div>
+                    </CardContent>
 
-                    <div className="flex flex-col gap-1.5">
-                        <label htmlFor="password" className="text-sm font-medium text-slate-700">
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            id="password"
-                            placeholder="At least 6 characters"
-                            required
-                            minLength={6}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                        />
-                    </div>
+                    <CardFooter className="flex flex-col gap-4">
+                        <Button type="submit" disabled={loading} className="w-full">
+                            {loading ? "Registering..." : "Register"}
+                        </Button>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="mt-2 inline-flex items-center justify-center rounded-md bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                        {loading ? "Registering..." : "Register"}
-                    </button>
+                        <p className="text-center text-sm text-muted-foreground">
+                            Already have an account?{" "}
+                            <Link href="/login" className="font-semibold text-primary hover:underline">
+                                Login
+                            </Link>
+                        </p>
+                    </CardFooter>
                 </form>
-
-                <p className="mt-6 text-center text-sm text-slate-600">
-                    Already have an account?{" "}
-                    <Link href="/login" className="font-semibold text-blue-700 hover:underline">
-                        Login
-                    </Link>
-                </p>
-            </section>
+            </Card>
         </main>
     )
 }

@@ -182,7 +182,10 @@ export async function GET(
             const sanitizedQuestions =
                 exam.questions.map(question => ({
 
-                    id: question.id,
+                    // This must be the actual Question's id (not the
+                    // ExamQuestion join row's id) -- attempts/save and the
+                    // AttemptAnswer.questionId foreign key both expect it.
+                    id: question.question.id,
 
                     question:
                         question.question.questionText,

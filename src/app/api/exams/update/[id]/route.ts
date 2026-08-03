@@ -108,6 +108,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
                 status: validatedBody.status,
                 durationMinutes: validatedBody.durationMinutes,
                 classroomId: validatedBody.classroomId,
+                startsAt: validatedBody.startsAt ? new Date(validatedBody.startsAt) : undefined,
+                endsAt: validatedBody.endsAt ? new Date(validatedBody.endsAt) : undefined,
             }
         })
 

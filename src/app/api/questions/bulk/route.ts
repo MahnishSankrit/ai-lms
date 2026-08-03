@@ -162,6 +162,12 @@ export async function POST(req: Request) {
 
             }
 
+        }, {
+            // Default is 5000ms, which isn't enough once a batch has more
+            // than a handful of questions (each create() is a separate
+            // round trip). Bulk saves -- e.g. from the AI generator -- can
+            // easily have 10-100 questions, so this needs more room.
+            timeout: 30000,
         });
 
         return NextResponse.json(
