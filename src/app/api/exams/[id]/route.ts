@@ -2,6 +2,7 @@ import { NextResponse }from "next/server";
 import { getServerSession }from "next-auth";
 import { authOptions }from "@/lib/auth";
 import { prisma }from "@/lib/prisma";
+import { seededShuffle } from "@/lib/shuffle";
 
 /**
  * @swagger
@@ -136,10 +137,12 @@ export async function GET(
             session.user.role === "student"
         ) {
 
-            // ONLY PUBLISHED EXAMS
+            // Students can view it once it's live -- either still
+            // "published" (teacher hasn't clicked Start yet) or "ongoing"
+            // (they have). Only "draft" and "completed" are off-limits.
             if (
-                exam.status !==
-                "published"
+                exam.status !== "published" &&
+                exam.status !== "ongoing"
             ) {
 
                 return NextResponse.json(
@@ -179,23 +182,44 @@ export async function GET(
             }
 
             // SANITIZE QUESTIONS
-            const sanitizedQuestions =
-                exam.questions.map(question => ({
+            let sanitizedQuestions =
+                exam.questions.map(question => {
 
-                    // This must be the actual Question's id (not the
-                    // ExamQuestion join row's id) -- attempts/save and the
-                    // AttemptAnswer.questionId foreign key both expect it.
-                    id: question.question.id,
+                    // Strip isCorrect -- students should never receive
+                    // which option is correct before they've answered.
+                    const options = question.question.options.map(option => ({
+                        id: option.id,
+                        optionText: option.optionText,
+                    }));
 
-                    question:
-                        question.question.questionText,
+                    return {
 
-                    options:
-                        question.question.options,
+                        // This must be the actual Question's id (not the
+                        // ExamQuestion join row's id) -- attempts/save and the
+                        // AttemptAnswer.questionId foreign key both expect it.
+                        id: question.question.id,
 
-                    marks:
-                        question.question.marks,
-                }));
+                        question:
+                            question.question.questionText,
+
+                        type:
+                            question.question.type,
+
+                        options: exam.shuffleOptions
+                            ? seededShuffle(options, `${session.user.id}-${question.question.id}-options`)
+                            : options,
+
+                        marks:
+                            question.question.marks,
+                    };
+                });
+
+            // Same idea, but for the order questions appear in -- each
+            // student gets a consistent-for-them but different order from
+            // other students, so "Q3 is B" isn't useful info to share.
+            if (exam.shuffleQuestions) {
+                sanitizedQuestions = seededShuffle(sanitizedQuestions, `${session.user.id}-${exam.id}-questions`);
+            }
 
             return NextResponse.json(
                 {
@@ -211,6 +235,15 @@ export async function GET(
 
                         duration:
                             exam.durationMinutes,
+
+                        // Never send the actual code -- the teacher shares
+                        // it separately. Students only need to know
+                        // whether one is required at all.
+                        requiresAccessCode:
+                            Boolean(exam.accessCode),
+
+                        fullscreenRequired:
+                            exam.fullscreenRequired,
 
                         startTime:
                             exam.startsAt,

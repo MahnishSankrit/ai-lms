@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { gradeAttempt } from "@/lib/grading";
 
 
 // can use the cron job to automatically end the exam when the end time is reached, but for now, we will just create an endpoint to end the exam manually, which can be called by the teacher from the frontend when they want to end the exam, or it can be called by a cron job that runs every minute to check if there are any ongoing exams that have reached their end time and end them automatically
@@ -85,18 +86,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         }
 
         // Auto-submit any in-progress attempts, then mark exam completed.
+        // Each one needs to be graded individually (updateMany can't run
+        // per-row logic), otherwise these attempts would end with score
+        // stuck at null forever, same as a manual submit would compute.
         const activeAttempts = exam.attempts.filter(
             (attempt) => attempt.status === "in_progress"
         );
 
-        if (activeAttempts.length > 0) {
-            await prisma.examAttempt.updateMany({
-                where: {
-                    examId: examId,
-                    status: "in_progress",
-                },
+        for (const attempt of activeAttempts) {
+            const finalScore = await gradeAttempt(attempt.id);
+
+            await prisma.examAttempt.update({
+                where: { id: attempt.id },
                 data: {
                     status: "auto_submitted",
+                    score: finalScore,
                     submittedAt: new Date(),
                 },
             });

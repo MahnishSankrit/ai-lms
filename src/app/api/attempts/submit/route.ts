@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-// import { asyncWrapProviders } from "async_hooks";
+import { gradeAttempt } from "@/lib/grading";
 
 
 // Student Clicks Submit
@@ -134,91 +134,10 @@ export async function POST(req: Request) {
         }
 
         // ==================================================
-        // STEP 7: LOAD ALL ANSWERS OF THIS ATTEMPT
+        // STEP 7-9: GRADE EVERY ANSWER (shared with force-submit
+        // and the violations auto-submit path)
         // ==================================================
-        const answers = await prisma.attemptAnswer.findMany({
-            where: {
-                attemptId,
-            },
-        });
-
-        // ==================================================
-        // STEP 8: INITIALIZE SCORE VARIABLE
-        // ==================================================
-        let finalScore = 0;
-
-        // ==================================================
-        // STEP 9: EVALUATE EACH ANSWER
-        // ==================================================
-        for (const answer of answers) {
-
-            // Skip unanswered questions
-            if (!answer.selectedOptionId) {
-                continue;
-            }
-
-            // ==============================================
-            // FIND SELECTED OPTION
-            // ==============================================
-            const selectedOption =
-                await prisma.questionOption.findUnique({
-                    where: {
-                        id: answer.selectedOptionId,
-                    },
-                });
-
-            if (!selectedOption) {
-                continue;
-            }
-
-            // ==============================================
-            // FIND QUESTION TO GET MARKS
-            // ==============================================
-            const question =
-                await prisma.question.findUnique({
-                    where: {
-                        id: answer.questionId,
-                    },
-                });
-
-            if (!question) {
-                continue;
-            }
-
-            // ==============================================
-            // CHECK CORRECTNESS
-            // ==============================================
-            const isCorrect =
-                selectedOption.isCorrect;
-
-            // ==============================================
-            // CALCULATE MARKS FOR THIS QUESTION
-            // ==============================================
-            const marksAwarded =
-                isCorrect ? question.marks : 0;
-
-            // ==============================================
-            // ADD TO FINAL SCORE
-            // ==============================================
-            finalScore += marksAwarded;
-
-            // ==============================================
-            // UPDATE ATTEMT ANSWER
-            // STORE EVALUATION RESULT
-            // ==============================================
-            await prisma.attemptAnswer.update({
-                where: {
-                    attemptId_questionId: {
-                        attemptId,
-                        questionId: answer.questionId,
-                    },
-                },
-                data: {
-                    isCorrect,
-                    marksAwarded,
-                },
-            });
-        }
+        const finalScore = await gradeAttempt(attemptId);
 
         // ==================================================
         // STEP 10: UPDATE ATTEMPT

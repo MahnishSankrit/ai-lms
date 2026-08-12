@@ -1,10 +1,43 @@
 // Lists every user in the system, with controls to change their
 // account status (active / inactive / suspended) or delete them.
+// Also has a dialog to invite a new teacher by email.
 
 "use client"
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
+import { Copy, Mail, Users as UsersIcon } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import EmptyState from "@/components/empty-state";
+import ErrorState from "@/components/error-state";
 
 type User = {
     id: string;
@@ -22,7 +55,12 @@ export default function AdminUsersPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [message, setMessage] = useState("");
+
+    const [inviteOpen, setInviteOpen] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState("");
+    const [inviting, setInviting] = useState(false);
+    const [inviteLink, setInviteLink] = useState("");
+    const [inviteEmailSent, setInviteEmailSent] = useState(true);
 
     const loadUsers = async () => {
         setLoading(true);
@@ -53,8 +91,6 @@ export default function AdminUsersPage() {
     }, [page]);
 
     const handleStatusChange = async (userId: string, status: string) => {
-        setMessage("");
-
         try {
             const response = await fetch("/api/users/status", {
                 method: "PATCH",
@@ -65,14 +101,15 @@ export default function AdminUsersPage() {
             const data = await response.json();
 
             if (!response.ok) {
-                setMessage(data.error || "Could not update status");
+                toast.error(data.error || "Could not update status");
                 return;
             }
 
+            toast.success("Status updated");
             loadUsers();
         } catch (err) {
             console.error("Error updating status:", err);
-            setMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         }
     };
 
@@ -87,90 +124,188 @@ export default function AdminUsersPage() {
             const data = await response.json();
 
             if (!response.ok) {
-                setMessage(data.error || "Could not delete user");
+                toast.error(data.error || "Could not delete user");
                 return;
             }
 
+            toast.success("User deleted");
             loadUsers();
         } catch (err) {
             console.error("Error deleting user:", err);
         }
     };
 
+    const openInviteDialog = () => {
+        setInviteEmail("");
+        setInviteLink("");
+        setInviteOpen(true);
+    };
+
+    const handleInvite = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setInviting(true);
+        setInviteLink("");
+
+        try {
+            const response = await fetch("/api/teacher-invite", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: inviteEmail }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                toast.error(data.error || "Could not send invite");
+                return;
+            }
+
+            setInviteLink(data.inviteLink);
+            setInviteEmailSent(data.emailSent);
+        } catch (err) {
+            console.error("Error inviting teacher:", err);
+            toast.error("Something went wrong. Please try again.");
+        } finally {
+            setInviting(false);
+        }
+    };
+
+    const copyInviteLink = () => {
+        navigator.clipboard.writeText(inviteLink);
+        toast.success("Link copied");
+    };
+
     return (
         <div>
-            <h1 className="text-2xl font-bold text-slate-900">Users</h1>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h1 className="text-2xl font-bold tracking-tight">Users</h1>
 
-            {message && <p className="mt-3 text-sm text-red-600">{message}</p>}
+                <Button size="sm" onClick={openInviteDialog}>
+                    <Mail /> Invite Teacher
+                </Button>
+
+                <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Invite a teacher</DialogTitle>
+                        </DialogHeader>
+
+                        {inviteLink ? (
+                            <div className="flex flex-col gap-3">
+                                <p className="text-sm text-muted-foreground">
+                                    {inviteEmailSent
+                                        ? "Invite email sent. You can also share this link directly:"
+                                        : "The invite email couldn't be sent, but you can share this link directly:"}
+                                </p>
+                                <div className="flex gap-2">
+                                    <Input readOnly value={inviteLink} />
+                                    <Button type="button" variant="outline" size="icon" onClick={copyInviteLink}>
+                                        <Copy />
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Expires in 7 days.</p>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleInvite} className="flex flex-col gap-3">
+                                <Label htmlFor="inviteEmail">Teacher&apos;s email</Label>
+                                <Input
+                                    id="inviteEmail"
+                                    type="email"
+                                    required
+                                    placeholder="teacher@example.com"
+                                    value={inviteEmail}
+                                    onChange={(e) => setInviteEmail(e.target.value)}
+                                />
+                                <DialogFooter>
+                                    <Button type="submit" disabled={inviting}>
+                                        {inviting ? "Sending..." : "Send invite"}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        )}
+                    </DialogContent>
+                </Dialog>
+            </div>
 
             <div className="mt-6">
-                {loading && <p className="text-sm text-slate-500">Loading users...</p>}
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {loading && <Skeleton className="h-64 w-full rounded-xl" />}
+                {error && <ErrorState message={error} onRetry={loadUsers} />}
 
-                <div className="flex flex-col gap-2">
-                    {users.map((user) => {
-                        const isSelf = session?.user?.id === user.id;
+                {!loading && !error && users.length === 0 && (
+                    <EmptyState icon={UsersIcon} title="No users" description="Nothing to show yet." />
+                )}
 
-                        return (
-                            <div key={user.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-200 bg-white p-4">
-                                <div>
-                                    <p className="font-medium text-slate-900">{user.email}</p>
-                                    <p className="text-xs text-slate-500 capitalize">
-                                        {user.role} · {user.isVerified ? "verified" : "not verified"}
-                                    </p>
-                                </div>
+                {!loading && !error && users.length > 0 && (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Role</TableHead>
+                                <TableHead>Verified</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {users.map((user) => {
+                                const isSelf = session?.user?.id === user.id;
 
-                                <div className="flex items-center gap-3">
-                                    <select
-                                        defaultValue=""
-                                        onChange={(e) => {
-                                            if (e.target.value) {
-                                                handleStatusChange(user.id, e.target.value);
-                                                e.target.value = "";
-                                            }
-                                        }}
-                                        className="rounded-md border border-slate-300 px-2 py-1 text-sm outline-none focus:border-blue-600"
-                                    >
-                                        <option value="" disabled>
-                                            Set status...
-                                        </option>
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                        <option value="suspended">Suspended</option>
-                                    </select>
+                                return (
+                                    <TableRow key={user.id}>
+                                        <TableCell>{user.email}</TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className="capitalize">{user.role}</Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={user.isVerified ? "default" : "secondary"}>
+                                                {user.isVerified ? "Verified" : "Not verified"}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Select
+                                                onValueChange={(value: string | null) => {
+                                                    if (value) handleStatusChange(user.id, value);
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-36">
+                                                    <SelectValue placeholder="Set status..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="active">Active</SelectItem>
+                                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                                    <SelectItem value="suspended">Suspended</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleDelete(user.id)}
+                                                disabled={isSelf}
+                                                className="text-destructive"
+                                            >
+                                                Delete
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                )}
 
-                                    <button
-                                        onClick={() => handleDelete(user.id)}
-                                        disabled={isSelf}
-                                        className="text-sm font-medium text-red-600 hover:underline disabled:cursor-not-allowed disabled:text-slate-300"
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-
-                <div className="mt-4 flex items-center gap-3">
-                    <button
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={page <= 1}
-                        className="rounded-md border border-slate-300 px-3 py-1 text-sm disabled:opacity-40"
-                    >
-                        Previous
-                    </button>
-                    <span className="text-sm text-slate-500">
-                        Page {page} of {totalPages}
-                    </span>
-                    <button
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={page >= totalPages}
-                        className="rounded-md border border-slate-300 px-3 py-1 text-sm disabled:opacity-40"
-                    >
-                        Next
-                    </button>
-                </div>
+                {!loading && !error && totalPages > 1 && (
+                    <div className="mt-4 flex items-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+                            Previous
+                        </Button>
+                        <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+                        <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+                            Next
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     );

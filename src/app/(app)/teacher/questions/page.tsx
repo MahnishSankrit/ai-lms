@@ -1,13 +1,17 @@
 // Question bank: a searchable/filterable table of every question the
-// teacher has created, a dialog to create a new one, and a link out to
-// the AI generator for bulk creation.
+// teacher has created, a dialog to create a new one, a CSV export, and
+// a link out to the AI generator for bulk creation.
+//
+// Search/filter/pagination all happen server-side via /api/questions/search
+// (not by filtering whatever page happens to already be loaded), so
+// searching actually searches the whole bank, not just the visible page.
 
 "use client"
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { BookOpen, Pencil, Plus, Sparkles, Trash2, Upload } from "lucide-react";
+import { BookOpen, Download, Pencil, Plus, Sparkles, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,8 +78,10 @@ export default function TeacherQuestionsPage() {
 
     const [search, setSearch] = useState("");
     const [typeFilter, setTypeFilter] = useState("all");
+    const [difficultyFilter, setDifficultyFilter] = useState("all");
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [exporting, setExporting] = useState(false);
 
     const [dialogOpen, setDialogOpen] = useState(false);
     // null = creating a new question; otherwise the id of the question being edited.
@@ -92,21 +98,20 @@ export default function TeacherQuestionsPage() {
         setError("");
 
         try {
-            const response = await fetch(`/api/questions/get-questions?page=${page}&limit=10`);
-            const data = await response.json();
+            const params = new URLSearchParams({ page: String(page), limit: "10" });
+            if (search) params.set("q", search);
+            if (typeFilter !== "all") params.set("type", typeFilter);
+            if (difficultyFilter !== "all") params.set("difficulty", difficultyFilter);
 
-            // A 404 here just means there are no questions yet.
-            if (response.status === 404) {
-                setQuestions([]);
-                return;
-            }
+            const response = await fetch(`/api/questions/search?${params.toString()}`);
+            const data = await response.json();
 
             if (!response.ok) {
                 setError(data.error || "Failed to load questions");
                 return;
             }
 
-            setQuestions(data.questions);
+            setQuestions(data.data);
             setTotalPages(data.totalPages);
         } catch (err) {
             console.error("Error loading questions:", err);
@@ -116,18 +121,27 @@ export default function TeacherQuestionsPage() {
         }
     };
 
+    // Refetch whenever the page changes immediately...
     useEffect(() => {
         loadQuestions();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page]);
 
-    const visibleQuestions = useMemo(() => {
-        return questions.filter((question) => {
-            const matchesSearch = question.questionText.toLowerCase().includes(search.toLowerCase());
-            const matchesType = typeFilter === "all" || question.type === typeFilter;
-            return matchesSearch && matchesType;
-        });
-    }, [questions, search, typeFilter]);
+    // ...but debounce search/filter changes so we're not sending a request
+    // on every single keystroke, and jump back to page 1 since the old
+    // page number might not exist in the new filtered results.
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (page !== 1) {
+                setPage(1);
+            } else {
+                loadQuestions();
+            }
+        }, 400);
+
+        return () => clearTimeout(timeout);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search, typeFilter, difficultyFilter]);
 
     const resetForm = () => {
         setQuestionText("");
@@ -224,16 +238,48 @@ export default function TeacherQuestionsPage() {
         }
     };
 
+    const handleExport = async () => {
+        setExporting(true);
+
+        try {
+            const response = await fetch("/api/questions/export", { method: "POST" });
+
+            if (!response.ok) {
+                const data = await response.json();
+                toast.error(data.error || "Could not export questions");
+                return;
+            }
+
+            // The response is a CSV file, not JSON -- turn it into a
+            // downloadable link and click it.
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "questions.csv";
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Error exporting questions:", err);
+            toast.error("Something went wrong. Please try again.");
+        } finally {
+            setExporting(false);
+        }
+    };
+
     return (
         <div>
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-2xl font-bold tracking-tight">Question Bank</h1>
 
                 <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+                        <Download /> {exporting ? "Exporting..." : "Export CSV"}
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => toast("Bulk import isn't wired up yet.")}>
                         <Upload /> Import
                     </Button>
-                    <Button variant="outline" size="sm" render={<Link href="/teacher/ai" />}>
+                    <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/teacher/ai" />}>
                         <Sparkles /> AI Generate
                     </Button>
 
@@ -349,13 +395,24 @@ export default function TeacherQuestionsPage() {
                         <SelectItem value="short_answer">Short answer</SelectItem>
                     </SelectContent>
                 </Select>
+                <Select value={difficultyFilter} onValueChange={(value) => setDifficultyFilter(value ?? "all")}>
+                    <SelectTrigger className="w-40">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All difficulties</SelectItem>
+                        <SelectItem value="Easy">Easy</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="Hard">Hard</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="mt-4">
                 {loading && <Skeleton className="h-64 w-full rounded-xl" />}
                 {error && <ErrorState message={error} onRetry={loadQuestions} />}
 
-                {!loading && !error && visibleQuestions.length === 0 && (
+                {!loading && !error && questions.length === 0 && (
                     <EmptyState
                         icon={BookOpen}
                         title="No questions found"
@@ -363,7 +420,7 @@ export default function TeacherQuestionsPage() {
                     />
                 )}
 
-                {!loading && !error && visibleQuestions.length > 0 && (
+                {!loading && !error && questions.length > 0 && (
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -375,7 +432,7 @@ export default function TeacherQuestionsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {visibleQuestions.map((question) => (
+                            {questions.map((question) => (
                                 <TableRow key={question.id}>
                                     <TableCell className="max-w-md truncate">{question.questionText}</TableCell>
                                     <TableCell>

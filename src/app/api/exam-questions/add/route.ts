@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createQuestionSchema } from "@/validation/question.schema";
 import { ZodError } from "zod";
+import { recalculateTotalMarks } from "@/lib/grading";
 
 // this api is creaing the  realtionship between the exam and the question, so that the question can be added to the exam
 // It creates a record in the ExamQuestion junction table, linking an existing question to an existing exam. Before creating the relationship,
@@ -139,6 +140,9 @@ export async function POST(req: Request) {
                 { status: 500 }
             )
         }
+
+        // keep exam.totalMarks in sync with the questions actually attached
+        await recalculateTotalMarks(examId);
 
         return NextResponse.json(
             { message: "Question added to exam successfully", createExam },

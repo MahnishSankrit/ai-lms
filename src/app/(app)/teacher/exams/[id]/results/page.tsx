@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 type Statistic = {
     totalAttempts: number;
@@ -95,11 +96,15 @@ export default function ExamResultsPage() {
 
             <div className="mt-4 flex flex-col gap-2">
                 {attempts.map((attempt) => (
-                    <div key={attempt.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-3 text-sm">
+                    <Link
+                        key={attempt.id}
+                        href={`/teacher/exams/${examId}/results/${attempt.id}`}
+                        className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-3 text-sm hover:border-blue-400"
+                    >
                         <span className="text-slate-700">{attempt.student.email}</span>
                         <span className="capitalize text-slate-500">{attempt.status}</span>
                         <span className="font-semibold text-slate-900">{attempt.score ?? "-"}</span>
-                    </div>
+                    </Link>
                 ))}
             </div>
         </div>

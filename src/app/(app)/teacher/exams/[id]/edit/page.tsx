@@ -38,6 +38,7 @@ type ExamData = {
     durationMinutes: number;
     startsAt: string | null;
     endsAt: string | null;
+    accessCode: string | null;
     questions: AttachedQuestion[];
 };
 
@@ -45,6 +46,15 @@ type ExamData = {
 function toDatetimeLocal(isoDate: string | null) {
     if (!isoDate) return "";
     return isoDate.slice(0, 16);
+}
+
+// Formats a Date using its local time (not UTC) into the same
+// "YYYY-MM-DDTHH:mm" shape <input type="datetime-local"> expects --
+// used when we calculate a new end time ourselves, rather than just
+// displaying one that already came from the server.
+function toDatetimeLocalFromDate(date: Date) {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 export default function EditExamPage() {
@@ -63,6 +73,31 @@ export default function EditExamPage() {
     const [startsAt, setStartsAt] = useState("");
     const [endsAt, setEndsAt] = useState("");
     const [saving, setSaving] = useState(false);
+
+    // Whenever the start time is picked, push the end time forward to
+    // match it automatically, based on whatever duration is set.
+    const handleStartsAtChange = (value: string) => {
+        setStartsAt(value);
+
+        if (value) {
+            const start = new Date(value);
+            const end = new Date(start.getTime() + durationMinutes * 60000);
+            setEndsAt(toDatetimeLocalFromDate(end));
+        }
+    };
+
+    // Same idea, but the other direction: if a start time is already
+    // set and the teacher changes the duration afterwards, keep the end
+    // time in sync instead of leaving it stale.
+    const handleDurationChange = (minutes: number) => {
+        setDurationMinutes(minutes);
+
+        if (startsAt) {
+            const start = new Date(startsAt);
+            const end = new Date(start.getTime() + minutes * 60000);
+            setEndsAt(toDatetimeLocalFromDate(end));
+        }
+    };
 
     const loadExam = async () => {
         const response = await fetch(`/api/exams/${examId}`);
@@ -158,6 +193,80 @@ export default function EditExamPage() {
         }
     };
 
+    const handleStart = async () => {
+        setMessage("");
+
+        try {
+            const response = await fetch(`/api/exams/${examId}/start`, {
+                method: "POST",
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                setMessage(data.error || "Could not start exam");
+                return;
+            }
+
+            loadExam();
+        } catch (err) {
+            console.error("Error starting exam:", err);
+            setMessage("Something went wrong. Please try again.");
+        }
+    };
+
+    const handleEnd = async () => {
+        if (!confirm("End this exam now? Any student still in progress will be auto-submitted immediately.")) {
+            return;
+        }
+
+        setMessage("");
+
+        try {
+            const response = await fetch(`/api/exams/${examId}/end`, {
+                method: "POST",
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                setMessage(data.error || "Could not end exam");
+                return;
+            }
+
+            loadExam();
+        } catch (err) {
+            console.error("Error ending exam:", err);
+            setMessage("Something went wrong. Please try again.");
+        }
+    };
+
+    const handleCopy = (text: string, label: string) => {
+        navigator.clipboard.writeText(text);
+        setMessage(`${label} copied to clipboard.`);
+    };
+
+    const handleRegenerateCode = async () => {
+        if (!confirm("Generate a new code? The old code will stop working immediately.")) return;
+
+        setMessage("");
+
+        try {
+            const response = await fetch(`/api/exams/${examId}/regenerate-code`, {
+                method: "POST",
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                setMessage(data.error || "Could not regenerate code");
+                return;
+            }
+
+            loadExam();
+        } catch (err) {
+            console.error("Error regenerating exam code:", err);
+            setMessage("Something went wrong. Please try again.");
+        }
+    };
+
     const handleAddQuestion = async (questionId: string) => {
         try {
             const response = await fetch("/api/exam-questions/add", {
@@ -208,6 +317,57 @@ export default function EditExamPage() {
 
             {message && <p className="mt-3 text-sm text-slate-600">{message}</p>}
 
+            <div className="mt-6 flex max-w-md flex-col gap-3 rounded-md border border-slate-200 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-700">Share with students</p>
+
+                <div>
+                    <label className="text-xs font-medium text-slate-500">Exam link</label>
+                    <div className="mt-1 flex gap-2">
+                        <input
+                            readOnly
+                            value={`${typeof window !== "undefined" ? window.location.origin : ""}/student/exams/${examId}`}
+                            className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                        />
+                        <button
+                            type="button"
+                            onClick={() =>
+                                handleCopy(`${window.location.origin}/student/exams/${examId}`, "Link")
+                            }
+                            className="shrink-0 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                        >
+                            Copy
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="text-xs font-medium text-slate-500">
+                        Exam code (share this separately -- students need it to start)
+                    </label>
+                    <div className="mt-1 flex gap-2">
+                        <input
+                            readOnly
+                            value={exam.accessCode || ""}
+                            className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-mono"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => exam.accessCode && handleCopy(exam.accessCode, "Code")}
+                            className="shrink-0 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                        >
+                            Copy
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleRegenerateCode}
+                            className="shrink-0 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                        >
+                            Regenerate
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <form onSubmit={handleSaveInfo} className="mt-6 flex max-w-md flex-col gap-3 rounded-md border border-slate-200 bg-white p-4">
                 <p className="text-sm font-semibold text-slate-700">Exam details</p>
 
@@ -238,7 +398,7 @@ export default function EditExamPage() {
                         required
                         min={1}
                         value={durationMinutes}
-                        onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                        onChange={(e) => handleDurationChange(Number(e.target.value))}
                         className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
                     />
                 </label>
@@ -248,7 +408,7 @@ export default function EditExamPage() {
                     <input
                         type="datetime-local"
                         value={startsAt}
-                        onChange={(e) => setStartsAt(e.target.value)}
+                        onChange={(e) => handleStartsAtChange(e.target.value)}
                         className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
                     />
                 </label>
@@ -279,6 +439,30 @@ export default function EditExamPage() {
                     >
                         Publish exam
                     </button>
+                )}
+
+                {exam.status === "published" && (
+                    <button
+                        type="button"
+                        onClick={handleStart}
+                        className="rounded-md border border-green-600 px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-50"
+                    >
+                        Start exam
+                    </button>
+                )}
+
+                {exam.status === "ongoing" && (
+                    <button
+                        type="button"
+                        onClick={handleEnd}
+                        className="rounded-md border border-red-600 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                    >
+                        End exam now
+                    </button>
+                )}
+
+                {exam.status === "completed" && (
+                    <p className="text-sm text-slate-500">This exam has ended.</p>
                 )}
             </form>
 

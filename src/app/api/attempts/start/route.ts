@@ -26,6 +26,7 @@ import { prisma } from "@/lib/prisma";
  *             required: [examId]
  *             properties:
  *               examId: { type: string }
+ *               accessCode: { type: string, description: "Required if the exam has one set; the teacher shares this separately from the exam link" }
  *     responses:
  *       200:
  *         description: Exam attempt started (attemptId returned)
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { examId } = body;
+        const { examId, accessCode } = body;
 
         const exam = await prisma.exam.findUnique({
             where: {
@@ -70,7 +71,9 @@ export async function POST(req: Request) {
             )
         }
 
-        if (exam.status !== "published") {
+        // "published" (teacher hasn't clicked Start yet) or "ongoing"
+        // (they have) both mean students can start an attempt.
+        if (exam.status !== "published" && exam.status !== "ongoing") {
             return NextResponse.json(
                 { error: "Exam is not published yet" },
                 { status: 403 }
@@ -134,10 +137,20 @@ export async function POST(req: Request) {
             }
         })
 
-        // this means that the student is not enrolled 
+        // this means that the student is not enrolled
         if (!membership) {
             return NextResponse.json(
                 { error: "You are not enrolled in this classroom" },
+                { status: 403 }
+            )
+        }
+
+        // Some exams require a code the teacher shares separately from the
+        // exam link (e.g. read out in class right before the exam starts).
+        // Exams created before this feature has no code, so they skip this.
+        if (exam.accessCode && exam.accessCode !== accessCode) {
+            return NextResponse.json(
+                { error: "Invalid exam code" },
                 { status: 403 }
             )
         }

@@ -105,6 +105,9 @@ export async function GET(req: Request) {
 
         const questions = await prisma.question.findMany({
             where,
+            include: {
+                options: true,
+            },
             orderBy: {
                 [sortBy]: sortOrder,
             },
@@ -112,11 +115,19 @@ export async function GET(req: Request) {
             take: limit,
         })
 
+        // Same pagination shape as /api/questions/get-questions, so the
+        // frontend can show "Page X of Y" regardless of which endpoint
+        // it's currently using.
+        const totalCount = await prisma.question.count({ where });
+        const totalPages = Math.ceil(totalCount / limit);
 
         return NextResponse.json(
-            { 
+            {
                 message: "Questions fetched successfully",
-                data: questions 
+                data: questions,
+                totalCount,
+                totalPages,
+                currentPage: page,
             },
             { status: 200 }
         )

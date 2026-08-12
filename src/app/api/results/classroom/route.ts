@@ -150,24 +150,77 @@ export async function GET(req: Request) {
         ),
 
     classrooms:
-        classrooms.map((classroom)=>({
+        classrooms.map((classroom) => {
 
-            classroomId:
-                classroom.id,
+            // Same aggregation as above, but scoped to just this classroom's
+            // exams/attempts, so each classroom gets its own average/pass rate
+            // instead of only the teacher-wide numbers.
+            let classroomTotalScore = 0;
+            let classroomTotalAttempts = 0;
+            let classroomPassed = 0;
+            let classroomHighest = -Infinity;
+            let classroomLowest = Infinity;
 
-            classroomName:
-                classroom.name,
+            for (const exam of classroom.exams) {
+                for (const attempt of exam.attempts) {
+                    classroomTotalAttempts++;
+                    const score = attempt.score ?? 0;
+                    classroomTotalScore += score;
 
-            subject:
-                classroom.subject,
+                    if (score > classroomHighest) classroomHighest = score;
+                    if (score < classroomLowest) classroomLowest = score;
 
-            totalStudents:
-                classroom.members.length,
+                    if (
+                        typeof exam.passingMarks === "number" &&
+                        score >= exam.passingMarks
+                    ) {
+                        classroomPassed++;
+                    }
+                }
+            }
 
-            totalExams:
-                classroom.exams.length,
+            const classroomAverageScore =
+                classroomTotalAttempts > 0 ? classroomTotalScore / classroomTotalAttempts : 0;
+            const classroomPassRate =
+                classroomTotalAttempts > 0 ? (classroomPassed / classroomTotalAttempts) * 100 : 0;
 
-        }))
+            return {
+
+                classroomId:
+                    classroom.id,
+
+                classroomName:
+                    classroom.name,
+
+                subject:
+                    classroom.subject,
+
+                joinCode:
+                    classroom.joinCode,
+
+                totalStudents:
+                    classroom.members.length,
+
+                totalExams:
+                    classroom.exams.length,
+
+                totalAttempts:
+                    classroomTotalAttempts,
+
+                averageScore:
+                    Number(classroomAverageScore.toFixed(2)),
+
+                highestScore:
+                    classroomHighest === -Infinity ? 0 : classroomHighest,
+
+                lowestScore:
+                    classroomLowest === Infinity ? 0 : classroomLowest,
+
+                passRate:
+                    Number(classroomPassRate.toFixed(2)),
+
+            };
+        })
 };
         return NextResponse.json(
             { results },

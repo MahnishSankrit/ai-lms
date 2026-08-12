@@ -66,6 +66,52 @@ export default function TeacherExamsPage() {
         }
     };
 
+    const handleStart = async (examId: string) => {
+        setActionMessage("");
+
+        try {
+            const response = await fetch(`/api/exams/${examId}/start`, {
+                method: "POST",
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                setActionMessage(data.error || "Could not start exam");
+                return;
+            }
+
+            loadExams();
+        } catch (err) {
+            console.error("Error starting exam:", err);
+            setActionMessage("Something went wrong. Please try again.");
+        }
+    };
+
+    const handleEnd = async (examId: string) => {
+        if (!confirm("End this exam now? Any student still in progress will be auto-submitted immediately.")) {
+            return;
+        }
+
+        setActionMessage("");
+
+        try {
+            const response = await fetch(`/api/exams/${examId}/end`, {
+                method: "POST",
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                setActionMessage(data.error || "Could not end exam");
+                return;
+            }
+
+            loadExams();
+        } catch (err) {
+            console.error("Error ending exam:", err);
+            setActionMessage("Something went wrong. Please try again.");
+        }
+    };
+
     const handleDelete = async (examId: string) => {
         if (!confirm("Delete this exam? This cannot be undone.")) return;
 
@@ -127,6 +173,22 @@ export default function TeacherExamsPage() {
                                         className="font-medium text-green-700 hover:underline"
                                     >
                                         Publish
+                                    </button>
+                                )}
+                                {exam.status === "published" && (
+                                    <button
+                                        onClick={() => handleStart(exam.id)}
+                                        className="font-medium text-green-700 hover:underline"
+                                    >
+                                        Start
+                                    </button>
+                                )}
+                                {exam.status === "ongoing" && (
+                                    <button
+                                        onClick={() => handleEnd(exam.id)}
+                                        className="font-medium text-red-600 hover:underline"
+                                    >
+                                        End now
                                     </button>
                                 )}
                                 <button

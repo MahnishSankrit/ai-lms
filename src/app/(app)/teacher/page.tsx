@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/empty-state";
+import ScoreTrendChart from "@/components/score-trend-chart";
 
 type Exam = {
     id: string;
@@ -28,6 +29,7 @@ type Exam = {
     status: string;
     startsAt: string | null;
     createdAt: string;
+    totalMarks: number;
     classroom: { id: string; name: string };
 };
 
@@ -40,6 +42,7 @@ export default function TeacherDashboardPage() {
     const [exams, setExams] = useState<Exam[]>([]);
     const [questionCount, setQuestionCount] = useState(0);
     const [averageScore, setAverageScore] = useState<number | null>(null);
+    const [examScorePoints, setExamScorePoints] = useState<{ label: string; value: number }[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -75,8 +78,9 @@ export default function TeacherDashboardPage() {
                 }
 
                 // Average score across recent exams that already have attempts.
+                const recentExams = examList.slice(0, 5);
                 const resultsSamples = await Promise.all(
-                    examList.slice(0, 5).map((exam) =>
+                    recentExams.map((exam) =>
                         fetch(`/api/exams/${exam.id}/results`).then((r) => (r.ok ? r.json() : null))
                     )
                 );
@@ -85,6 +89,20 @@ export default function TeacherDashboardPage() {
                     const total = scored.reduce((sum, r) => sum + r.statistic.averageScore, 0);
                     setAverageScore(total / scored.length);
                 }
+
+                // Same data, reshaped into percentage-per-exam points for the chart.
+                const points = recentExams
+                    .map((exam, index) => {
+                        const result = resultsSamples[index];
+                        if (!result || result.statistic.totalAttempts === 0 || exam.totalMarks === 0) return null;
+                        return {
+                            label: exam.title.length > 12 ? `${exam.title.slice(0, 12)}...` : exam.title,
+                            value: (result.statistic.averageScore / exam.totalMarks) * 100,
+                        };
+                    })
+                    .reverse() // recentExams is newest-first; charts read left-to-right chronologically
+                    .filter((point): point is { label: string; value: number } => point !== null);
+                setExamScorePoints(points);
             } catch (error) {
                 console.error("Error loading teacher dashboard:", error);
             } finally {
@@ -211,12 +229,10 @@ export default function TeacherDashboardPage() {
 
                 <Card className="lg:col-span-1">
                     <CardHeader>
-                        <CardTitle className="text-base">Score distribution</CardTitle>
+                        <CardTitle className="text-base">Average score by exam</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex h-24 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
-                            Chart coming soon
-                        </div>
+                        <ScoreTrendChart points={examScorePoints} />
                     </CardContent>
                 </Card>
             </div>

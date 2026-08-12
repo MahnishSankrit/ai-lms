@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { gradeAttempt } from "@/lib/grading";
 
 /**
  * @swagger
@@ -122,77 +123,11 @@ export async function POST(req: Request) {
         }
 
         // ==========================================
-        // STEP 5: LOAD ALL ANSWERS
+        // STEP 5-6: GRADE EVERY ANSWER (shared with the
+        // regular submit route and the violations auto-submit path)
         // ==========================================
 
-        const answers =
-            await prisma.attemptAnswer.findMany({
-                where: {
-                    attemptId,
-                },
-            });
-
-        // ==========================================
-        // STEP 6: CALCULATE SCORE
-        // ==========================================
-
-        let finalScore = 0;
-
-        for (const answer of answers) {
-
-            if (!answer.selectedOptionId) {
-                continue;
-            }
-
-            const option =
-                await prisma.questionOption.findUnique({
-                    where: {
-                        id:
-                            answer.selectedOptionId,
-                    },
-                });
-
-            if (!option) {
-                continue;
-            }
-
-            const question =
-                await prisma.question.findUnique({
-                    where: {
-                        id:
-                            answer.questionId,
-                    },
-                });
-
-            if (!question) {
-                continue;
-            }
-
-            const isCorrect =
-                option.isCorrect;
-
-            const marksAwarded =
-                isCorrect
-                    ? question.marks
-                    : 0;
-
-            finalScore += marksAwarded;
-
-            await prisma.attemptAnswer.update({
-                where: {
-                    attemptId_questionId: {
-                        attemptId,
-                        questionId:
-                            answer.questionId,
-                    },
-                },
-
-                data: {
-                    isCorrect,
-                    marksAwarded,
-                },
-            });
-        }
+        const finalScore = await gradeAttempt(attemptId);
 
         // ==========================================
         // STEP 7: UPDATE ATTEMPT

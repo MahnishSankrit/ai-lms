@@ -24,7 +24,8 @@ import { prisma } from "@/lib/prisma";
  *             properties:
  *               attemptId: { type: string }
  *               questionId: { type: string }
- *               selectedOptionId: { type: string }
+ *               selectedOptionId: { type: string, description: "For mcq/multiple_select/true_false questions" }
+ *               answerText: { type: string, description: "For short_answer questions" }
  *     responses:
  *       200:
  *         description: Answers saved successfully
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { attemptId, selectedOptionId, questionId } = body;
+        const { attemptId, selectedOptionId, answerText, questionId } = body;
 
         // get the exam attempt and verify ownership
         const examAttempt = await prisma.examAttempt.findUnique({
@@ -90,11 +91,13 @@ export async function POST(req: Request) {
             create:{
                 attemptId: attemptId,
                 selectedOptionId: selectedOptionId,
+                answerText: answerText,
                 questionId: questionId,
                 updatedAt: new Date(),
             },
             update:{
                 selectedOptionId: selectedOptionId,
+                answerText: answerText,
             }
         })
 

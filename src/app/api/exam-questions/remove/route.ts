@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createQuestionSchema } from "@/validation/question.schema";
 import { ZodError } from "zod";
+import { recalculateTotalMarks } from "@/lib/grading";
 
 // teacher remove the question fromg the exam
 
@@ -111,6 +112,9 @@ export async function DELETE(req: Request) {
                 id: examQuestionId,
             }
         })
+
+        // keep exam.totalMarks in sync with the questions actually attached
+        await recalculateTotalMarks(exam.id);
 
         return NextResponse.json(
             { message: "Exam question removed successfully" },

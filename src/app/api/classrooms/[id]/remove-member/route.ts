@@ -43,7 +43,7 @@ const memberRemovalSchema = z.object({
  *       404:
  *         description: Classroom not found/not owned by you, or membership not found
  *       500:
- *         description: Known bug -- this route deletes a Classroom by the membership id instead of deleting the ClassroomMember, which typically 500s
+ *         description: Server error
  */
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -98,7 +98,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         }
 
 
-        await prisma.classroom.delete({
+        await prisma.classroomMember.delete({
             where: {
                 id: memberShip.id,
             }
