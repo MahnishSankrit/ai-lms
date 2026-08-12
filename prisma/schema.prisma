@@ -231,6 +231,12 @@ model Exam {
 
   maxTabSwitches Int @default(3)
 
+  // A short code the teacher shares with students (verbally, in class, etc.)
+  // separately from the exam link -- entering it correctly is required
+  // before a student's attempt can start. Null means no code is required
+  // (e.g. exams created before this feature existed).
+  accessCode String?
+
   startsAt DateTime?
 
   endsAt DateTime?

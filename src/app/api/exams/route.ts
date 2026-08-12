@@ -109,6 +109,10 @@ export async function POST(req: Request) {
             )
         }
 
+        // Same style of code as a classroom's joinCode: short, random,
+        // shared with students separately from the exam link itself.
+        const accessCode = Math.random().toString(36).substring(2, 8);
+
         // create the exam in the database
         const exam = await prisma.exam.create({
             data: {
@@ -125,6 +129,7 @@ export async function POST(req: Request) {
                 shuffleQuestions: validatedBody.shuffleQuestions,
                 shuffleOptions: validatedBody.shuffleOptions,
                 fullscreenRequired: validatedBody.fullscreenRequired,
+                accessCode,
                 startsAt: validatedBody.startsAt,
                 endsAt: validatedBody.endsAt,
             },

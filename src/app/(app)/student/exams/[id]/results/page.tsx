@@ -4,12 +4,22 @@
 // Note: the results API is keyed by attemptId, not examId, so this page
 // reads ?attemptId=... from the URL (the exam-taking page adds it when
 // it redirects here after submitting).
+//
+// The per-question correct/incorrect breakdown and explanations stay
+// hidden for an hour after the exam ends -- see answersRevealed below --
+// so an early finisher can't tell classmates still taking it the answers.
 
 "use client"
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Lock } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import ErrorState from "@/components/error-state";
 
 type Violation = {
     id: string;
@@ -35,6 +45,8 @@ type ResultData = {
     pass: boolean;
     violations: Violation[];
     answers: AnsweredQuestion[];
+    answersRevealed: boolean;
+    answersRevealAt: string | null;
 };
 
 function ExamResultContent() {
@@ -45,8 +57,9 @@ function ExamResultContent() {
     const [error, setError] = useState(attemptId ? "" : "No attempt was specified.");
     const [loading, setLoading] = useState(Boolean(attemptId));
 
-    useEffect(() => {
+    const loadResult = () => {
         if (!attemptId) return;
+        setLoading(true);
 
         fetch(`/api/results/${attemptId}`)
             .then(async (response) => {
@@ -62,14 +75,24 @@ function ExamResultContent() {
                 setError("Something went wrong. Please try again.");
             })
             .finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        loadResult();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [attemptId]);
 
     if (loading) {
-        return <p className="text-sm text-slate-500">Loading result...</p>;
+        return (
+            <div className="flex flex-col gap-4">
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-24 w-full rounded-xl" />
+            </div>
+        );
     }
 
     if (error) {
-        return <p className="text-sm text-red-600">{error}</p>;
+        return <ErrorState message={error} onRetry={loadResult} />;
     }
 
     if (!result) {
@@ -78,58 +101,80 @@ function ExamResultContent() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-slate-900">{result.examTitle}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{result.examTitle}</h1>
 
             <div className="mt-4 flex flex-wrap gap-4">
-                <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs text-slate-500">Score</p>
-                    <p className="text-lg font-semibold text-slate-900">
-                        {result.score} / {result.totalMarks}
-                    </p>
-                </div>
+                <Card>
+                    <CardContent>
+                        <p className="text-xs text-muted-foreground">Score</p>
+                        <p className="text-lg font-semibold">
+                            {result.score} / {result.totalMarks}
+                        </p>
+                    </CardContent>
+                </Card>
 
-                <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs text-slate-500">Percentage</p>
-                    <p className="text-lg font-semibold text-slate-900">{result.percentage.toFixed(1)}%</p>
-                </div>
+                <Card>
+                    <CardContent>
+                        <p className="text-xs text-muted-foreground">Percentage</p>
+                        <p className="text-lg font-semibold">{result.percentage.toFixed(1)}%</p>
+                    </CardContent>
+                </Card>
 
-                <div
-                    className={`rounded-md border px-4 py-3 ${
-                        result.pass ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
-                    }`}
-                >
-                    <p className="text-xs text-slate-500">Result</p>
-                    <p className={`text-lg font-semibold ${result.pass ? "text-green-700" : "text-red-700"}`}>
-                        {result.pass ? "Pass" : "Fail"}
-                    </p>
-                </div>
+                <Card className={result.pass ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}>
+                    <CardContent>
+                        <p className="text-xs text-muted-foreground">Result</p>
+                        <p className={`text-lg font-semibold ${result.pass ? "text-green-700 dark:text-green-400" : "text-destructive"}`}>
+                            {result.pass ? "Pass" : "Fail"}
+                        </p>
+                    </CardContent>
+                </Card>
             </div>
 
             {result.violations.length > 0 && (
-                <div className="mt-6 rounded-md border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+                <div className="mt-6 rounded-md border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-400">
                     {result.violations.length} anti-cheat violation(s) were recorded during this attempt.
                 </div>
             )}
 
-            <h2 className="mt-8 text-lg font-semibold text-slate-900">Answer review</h2>
-            <div className="mt-4 flex flex-col gap-3">
-                {result.answers.map((answer, index) => (
-                    <div key={answer.id} className="rounded-md border border-slate-200 bg-white p-4">
-                        <p className="font-medium text-slate-900">
-                            {index + 1}. {answer.question.questionText}
-                        </p>
-                        <p className="mt-1 text-sm">
-                            {answer.isCorrect === true && <span className="text-green-700">Correct</span>}
-                            {answer.isCorrect === false && <span className="text-red-700">Incorrect</span>}
-                            {answer.isCorrect === null && <span className="text-slate-500">Not answered</span>}
-                            {" · "}
-                            {answer.marksAwarded ?? 0} / {answer.question.marks} marks
+            <h2 className="mt-8 text-lg font-semibold">Answer review</h2>
+
+            {!result.answersRevealed ? (
+                <div className="mt-4 flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-10 text-center">
+                    <Lock className="size-6 text-muted-foreground" />
+                    <div>
+                        <p className="font-medium">Answers aren&apos;t available yet</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            To keep the exam fair for everyone, the correct answers and explanations unlock
+                            {result.answersRevealAt
+                                ? ` at ${new Date(result.answersRevealAt).toLocaleString()}`
+                                : " after the exam window closes"}
+                            .
                         </p>
                     </div>
-                ))}
-            </div>
+                </div>
+            ) : (
+                <div className="mt-4 flex flex-col gap-3">
+                    {result.answers.map((answer, index) => (
+                        <Card key={answer.id}>
+                            <CardContent>
+                                <p className="font-medium">
+                                    {index + 1}. {answer.question.questionText}
+                                </p>
+                                <div className="mt-2 flex items-center gap-2 text-sm">
+                                    {answer.isCorrect === true && <Badge>Correct</Badge>}
+                                    {answer.isCorrect === false && <Badge variant="destructive">Incorrect</Badge>}
+                                    {answer.isCorrect === null && <Badge variant="secondary">Not answered</Badge>}
+                                    <span className="text-muted-foreground">
+                                        {answer.marksAwarded ?? 0} / {answer.question.marks} marks
+                                    </span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
 
-            <Link href="/student/results" className="mt-8 inline-block text-sm font-semibold text-blue-700 hover:underline">
+            <Link href="/student/results" className="mt-8 inline-block text-sm font-semibold text-primary hover:underline">
                 Back to all results
             </Link>
         </div>

@@ -11,11 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/empty-state";
+import ScoreTrendChart from "@/components/score-trend-chart";
 
 type Exam = {
     id: string;
     title: string;
     startsAt: string | null;
+    endsAt: string | null;
     classroom: { id: string; name: string };
 };
 
@@ -29,10 +31,18 @@ type ResultSummary = {
     pass: boolean;
 };
 
+type AttemptHistoryEntry = {
+    status: string;
+    score: number | null;
+    startedAt: string;
+    exam: { totalMarks: number };
+};
+
 export default function StudentDashboardPage() {
     const [classroomCount, setClassroomCount] = useState(0);
     const [upcomingExams, setUpcomingExams] = useState<Exam[]>([]);
     const [recentResults, setRecentResults] = useState<ResultSummary[]>([]);
+    const [trendPoints, setTrendPoints] = useState<{ label: string; value: number }[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -47,8 +57,12 @@ export default function StudentDashboardPage() {
                 const examsResponse = await fetch("/api/exams/get-exams");
                 const examsData = await examsResponse.json();
                 if (examsResponse.ok) {
+                    // "Upcoming" here means "still available to take" --
+                    // exams that haven't ended yet, whether they're
+                    // scheduled for later or already ongoing right now.
+                    // (get-exams itself already excludes draft/completed ones.)
                     const upcoming = (examsData.exams as Exam[])
-                        .filter((exam) => !exam.startsAt || new Date(exam.startsAt) >= new Date())
+                        .filter((exam) => !exam.endsAt || new Date(exam.endsAt) >= new Date())
                         .slice(0, 5);
                     setUpcomingExams(upcoming);
                 }
@@ -57,6 +71,27 @@ export default function StudentDashboardPage() {
                 const resultsData = await resultsResponse.json();
                 if (resultsResponse.ok) {
                     setRecentResults(resultsData.results.attempts);
+                }
+
+                // Score trend chart: attempt history has timestamps, unlike
+                // /api/results/students, so we use it here and compute the
+                // percentage ourselves.
+                const historyResponse = await fetch("/api/attempts/history?limit=8");
+                const historyData = await historyResponse.json();
+                if (historyResponse.ok) {
+                    const graded = (historyData.attempts as AttemptHistoryEntry[])
+                        .filter((attempt) => attempt.score !== null && attempt.exam.totalMarks > 0)
+                        .sort((a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime());
+
+                    setTrendPoints(
+                        graded.map((attempt) => ({
+                            label: new Date(attempt.startedAt).toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                            }),
+                            value: (attempt.score! / attempt.exam.totalMarks) * 100,
+                        }))
+                    );
                 }
             } catch (error) {
                 console.error("Error loading student dashboard:", error);
@@ -191,6 +226,15 @@ export default function StudentDashboardPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            <Card className="mt-6">
+                <CardHeader>
+                    <CardTitle className="text-base">Score trend</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {loading ? <Skeleton className="h-32 w-full" /> : <ScoreTrendChart points={trendPoints} />}
+                </CardContent>
+            </Card>
         </div>
     );
 }

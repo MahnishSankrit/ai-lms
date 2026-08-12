@@ -127,6 +127,33 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                     attempt.exam.totalMarks) * 100
                 : 0;
 
+        // Students can see their score right away, but not which specific
+        // questions they got right/wrong (or the explanations) until an
+        // hour after the exam's end time. Otherwise a fast finisher could
+        // submit early and tell classmates still taking it the answers.
+        // Teachers/admins always see the full breakdown.
+        const oneHourAfterEnd = attempt.exam.endsAt
+            ? new Date(attempt.exam.endsAt.getTime() + 60 * 60 * 1000)
+            : null;
+        const answersRevealed =
+            userRole !== "student" || !oneHourAfterEnd || new Date() >= oneHourAfterEnd;
+
+        const answers = attempt.answers.map((answer) => {
+            if (answersRevealed) {
+                return answer;
+            }
+
+            return {
+                ...answer,
+                isCorrect: null,
+                marksAwarded: null,
+                question: {
+                    ...answer.question,
+                    explanation: null,
+                },
+            };
+        });
+
         const result = {
 
             studentName:attempt.student.email,
@@ -138,7 +165,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             status:attempt.status,
             submittedAt:attempt.submittedAt,
             violations:attempt.violations,
-            answers:attempt.answers,
+            answers,
+            answersRevealed,
+            answersRevealAt: oneHourAfterEnd,
         };
 
 

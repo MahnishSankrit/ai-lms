@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { gradeAttempt } from "@/lib/grading";
 
 /**
  * @swagger
@@ -195,6 +196,13 @@ export async function POST(req: Request) {
 
         if (remainingMinutes <= 0) {
 
+            // Same grading used by a normal submit -- otherwise an attempt
+            // that times out (student closes the tab and never reopens it
+            // before the timer runs out client-side) would be marked done
+            // but stay ungraded with score stuck at null forever.
+            const finalScore =
+                await gradeAttempt(attempt.id);
+
             await prisma.examAttempt.update({
                 where: {
                     id: attempt.id,
@@ -203,6 +211,9 @@ export async function POST(req: Request) {
                 data: {
                     status:
                         "auto_submitted",
+
+                    score:
+                        finalScore,
 
                     submittedAt:
                         new Date(),

@@ -69,7 +69,9 @@ export async function GET(req: Request) {
         if (session.user.role === "student") {
             const exams = await prisma.exam.findMany({
                 where: {
-                    status: "published",
+                    // "published" (not started yet) or "ongoing" (teacher
+                    // clicked Start) both mean the student can see/take it.
+                    status: { in: ["published", "ongoing"] },
                     classroom: {
                         members: {
                             some: {

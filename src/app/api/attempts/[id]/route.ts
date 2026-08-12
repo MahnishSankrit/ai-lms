@@ -84,11 +84,22 @@ export async function GET(req: Request,{ params }: { params: Promise<{ id: strin
 
                     answers: {
                         include: {
-                            question: true,
+                            question: {
+                                include: {
+                                    options: true,
+                                },
+                            },
                         },
                     },
 
                     violations: true,
+
+                    student: {
+                        select: {
+                            id: true,
+                            email: true,
+                        },
+                    },
                 },
             });
 

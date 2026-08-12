@@ -1,6 +1,6 @@
 
 import {prisma} from "@/lib/prisma";
-import { sendVerificationEmail } from "@/lib/mail";
+import { sendTeacherInviteEmail } from "@/lib/mail";
 import * as z from "zod";
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
@@ -89,11 +89,22 @@ export async function POST(req: Request){
         })
 
         const inviteLink = `${process.env.URL}/teacher-invite/accept?token=${token}`;
-        console.log("Invite link:", inviteLink); // for testing purposes, we can log the invite link to the console, in production we will send the invite link to the user's email
+        console.log("Invite link:", inviteLink);
 
-        await sendVerificationEmail(teacherEmail, token); // we can reuse the same function to send the email, but we need to modify the function to send a different email for teacher invite 
+        // The invite record already exists at this point, so a failed send
+        // (e.g. Resend's sandbox sender can't deliver to arbitrary emails)
+        // shouldn't fail the whole request -- the link is returned either
+        // way so the admin can copy/share it directly.
+        let emailSent = true;
+        try {
+            await sendTeacherInviteEmail(teacherEmail, token);
+        } catch (emailError) {
+            console.error("Error sending teacher invite email:", emailError);
+            emailSent = false;
+        }
+
         return NextResponse.json(
-            {message: "Teacher invite sent successfully"},
+            { message: "Teacher invite created", inviteLink, emailSent },
             {status: 200}
         )
 

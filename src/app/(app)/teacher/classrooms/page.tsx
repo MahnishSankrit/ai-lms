@@ -1,15 +1,32 @@
-// Lists the teacher's classrooms and lets them create a new one.
+// Lists the teacher's classrooms (with each one's average score and
+// pass rate) and lets them create a new one.
 
 "use client"
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Building2 } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import EmptyState from "@/components/empty-state";
+import ErrorState from "@/components/error-state";
 
 type Classroom = {
-    id: string;
-    name: string;
+    classroomId: string;
+    classroomName: string;
     subject: string | null;
     joinCode: string;
+    totalStudents: number;
+    totalExams: number;
+    totalAttempts: number;
+    averageScore: number;
+    passRate: number;
 };
 
 export default function TeacherClassroomsPage() {
@@ -28,15 +45,21 @@ export default function TeacherClassroomsPage() {
         setError("");
 
         try {
-            const response = await fetch("/api/classrooms/get-classrooms");
+            const response = await fetch("/api/results/classroom");
             const data = await response.json();
+
+            // A 404 here just means the teacher has no classrooms yet.
+            if (response.status === 404) {
+                setClassrooms([]);
+                return;
+            }
 
             if (!response.ok) {
                 setError(data.error || "Failed to load classrooms");
                 return;
             }
 
-            setClassrooms(data.classrooms);
+            setClassrooms(data.results.classrooms);
         } catch (err) {
             console.error("Error loading classrooms:", err);
             setError("Something went wrong. Please try again.");
@@ -90,6 +113,7 @@ export default function TeacherClassroomsPage() {
             });
 
             if (response.ok) {
+                toast.success("Classroom deleted");
                 loadClassrooms();
             }
         } catch (err) {
@@ -99,69 +123,98 @@ export default function TeacherClassroomsPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-slate-900">My Classrooms</h1>
+            <h1 className="text-2xl font-bold tracking-tight">My Classrooms</h1>
 
-            <form onSubmit={handleCreate} className="mt-4 flex max-w-md flex-col gap-3 rounded-md border border-slate-200 bg-white p-4">
-                <p className="text-sm font-semibold text-slate-700">Create a classroom</p>
+            <form onSubmit={handleCreate} className="mt-4 flex max-w-md flex-col gap-3 rounded-md border p-4">
+                <p className="text-sm font-semibold">Create a classroom</p>
 
-                <input
-                    type="text"
+                <Input
                     placeholder="Name (e.g. Grade 10 Mathematics)"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
                 />
-                <input
-                    type="text"
+                <Input
                     placeholder="Subject (e.g. Mathematics)"
                     required
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
                 />
-                <textarea
+                <Textarea
                     placeholder="Description (optional)"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
                 />
 
-                <button
-                    type="submit"
-                    disabled={creating}
-                    className="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
-                >
+                <Button type="submit" disabled={creating} className="self-start">
                     {creating ? "Creating..." : "Create classroom"}
-                </button>
+                </Button>
 
-                {createMessage && <p className="text-sm text-slate-600">{createMessage}</p>}
+                {createMessage && <p className="text-sm text-muted-foreground">{createMessage}</p>}
             </form>
 
             <div className="mt-8">
-                {loading && <p className="text-sm text-slate-500">Loading classrooms...</p>}
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {loading && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Skeleton className="h-32 rounded-xl" />
+                        <Skeleton className="h-32 rounded-xl" />
+                    </div>
+                )}
+                {error && <ErrorState message={error} onRetry={loadClassrooms} />}
 
                 {!loading && !error && classrooms.length === 0 && (
-                    <p className="text-sm text-slate-500">You haven&apos;t created any classroom yet.</p>
+                    <EmptyState
+                        icon={Building2}
+                        title="No classrooms yet"
+                        description="Create one above to get started."
+                    />
                 )}
 
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                     {classrooms.map((classroom) => (
-                        <div key={classroom.id} className="rounded-md border border-slate-200 bg-white p-4">
-                            <Link href={`/teacher/classrooms/${classroom.id}`} className="font-semibold text-slate-900 hover:underline">
-                                {classroom.name}
-                            </Link>
-                            <p className="text-sm text-slate-500">{classroom.subject || "No subject"}</p>
-                            <p className="mt-2 text-xs text-slate-400">Join code: {classroom.joinCode}</p>
+                        <Card key={classroom.classroomId}>
+                            <CardContent>
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <Link href={`/teacher/classrooms/${classroom.classroomId}`} className="font-semibold hover:underline">
+                                            {classroom.classroomName}
+                                        </Link>
+                                        <p className="text-sm text-muted-foreground">{classroom.subject || "No subject"}</p>
+                                    </div>
+                                    <Badge variant="secondary">{classroom.totalStudents} student(s)</Badge>
+                                </div>
 
-                            <button
-                                onClick={() => handleDelete(classroom.id)}
-                                className="mt-3 text-xs font-medium text-red-600 hover:underline"
-                            >
-                                Delete
-                            </button>
-                        </div>
+                                <div className="mt-3 flex flex-wrap gap-4 text-sm">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Avg. score</p>
+                                        <p className="font-semibold">
+                                            {classroom.totalAttempts > 0 ? classroom.averageScore : "—"}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Pass rate</p>
+                                        <p className="font-semibold">
+                                            {classroom.totalAttempts > 0 ? `${classroom.passRate}%` : "—"}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Exams</p>
+                                        <p className="font-semibold">{classroom.totalExams}</p>
+                                    </div>
+                                </div>
+
+                                <p className="mt-3 text-xs text-muted-foreground">Join code: {classroom.joinCode}</p>
+
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDelete(classroom.classroomId)}
+                                    className="mt-2 text-destructive"
+                                >
+                                    Delete
+                                </Button>
+                            </CardContent>
+                        </Card>
                     ))}
                 </div>
             </div>
