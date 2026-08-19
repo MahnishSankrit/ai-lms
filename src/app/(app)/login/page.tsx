@@ -42,10 +42,19 @@ export default function LoginPage() {
                 setError("Invalid email or password");
                 return;
             }
-
             const session = await getSession();
-            const role = session?.user?.role ?? "student";
-            router.push(ROLE_HOME[role] ?? "/");
+
+            // console.log("Sign in response:", response);
+            console.log("Session after login:", session);
+
+            if (!session?.user) {
+                setError("Login succeeded, but session was not created.");
+                return;
+            }
+
+            const role = session.user.role;
+
+            router.replace(ROLE_HOME[role] ?? "/");
             router.refresh();
         } catch (error) {
             console.error("Error during login:", error);
