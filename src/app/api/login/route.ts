@@ -63,6 +63,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         const body = await req.json();
         const parsedBody = userSchema.safeParse(body);
 
+
         if (!parsedBody.success) {
             return NextResponse.json(
                 { error: "Invalid email or password" },
