@@ -17,7 +17,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 
-const ROLE_HOME: Record<string, string> = {
+const ROLE_HOME: any = {
     admin: "/admin",
     teacher: "/teacher",
     student: "/student",
@@ -45,6 +45,7 @@ export default function LoginPage() {
             const session = await getSession();
 
             // console.log("Sign in response:", response);
+
             console.log("Session after login:", session);
 
             if (!session?.user) {
@@ -52,7 +53,7 @@ export default function LoginPage() {
                 return;
             }
 
-            const role = session.user.role;
+            const role = session.user.role ?? "";
 
             router.replace(ROLE_HOME[role] ?? "/");
             router.refresh();
