@@ -50,11 +50,11 @@ const RegisterSchema = z.object({
  *       500:
  *         description: Validation error or server error
  */
-export async function POST(req: Request){
+export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const {email, password: registerPassword } = RegisterSchema.parse(body);
-        if(!email || !registerPassword){
+        const { email, password: registerPassword } = RegisterSchema.parse(body);
+        if (!email || !registerPassword) {
             throw new Error("missing email or password");
         }
 
@@ -64,10 +64,10 @@ export async function POST(req: Request){
             }
         })
 
-        if(existingUser){
+        if (existingUser) {
             return NextResponse.json(
-                {error: "User already exists"},
-                {status: 400}
+                { error: "User already exists" },
+                { status: 400 }
             )
         }
 
@@ -77,32 +77,41 @@ export async function POST(req: Request){
         const user = await prisma.user.create({
             data: {
                 email,
-                password : hashPassword,
+                password: hashPassword,
                 role: "student",
                 verificationToken,
             }
         })
 
-        await sendVerificationEmail(email, verificationToken); 
+        try {
+            await sendVerificationEmail(email, verificationToken);
+        } catch (emailError) {
+            console.error("Verification email could not be sent:", emailError);
+            await prisma.user.delete({ where: { id: user.id } });
+            return NextResponse.json(
+                { error: "Account could not be created because the verification email could not be sent" },
+                { status: 503 }
+            );
+        }
 
         const { password: passwordHash, verificationToken: verificationTokenValue, ...safeUser } = user;
         void passwordHash;
         void verificationTokenValue;
 
         return NextResponse.json(
-            {message: "User created successfully", user: safeUser},
-           
-            {status: 201}
+            { message: "Account created. Check your email to verify your account before logging in.", user: safeUser },
+
+            { status: 201 }
         )
 
 
-        
+
     } catch (error) {
         console.error("Error in registration:", error);
         return NextResponse.json(
 
-            {error: "Failed to create user"},
-            {status: 500}
+            { error: "Failed to create user" },
+            { status: 500 }
         )
     }
 }

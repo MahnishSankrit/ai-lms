@@ -31,6 +31,9 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
+    const registered = typeof window !== "undefined"
+        && new URLSearchParams(window.location.search).get("registered") === "1";
+
     const handleLogin = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError("");
@@ -39,7 +42,9 @@ export default function LoginPage() {
         try {
             const response = await signIn("credentials", { email, password, redirect: false });
             if (!response || response.error) {
-                setError("Invalid email or password");
+                setError(response?.error === "Email not verified"
+                    ? "Please verify your email before logging in."
+                    : "Invalid email or password");
                 return;
             }
             const session = await getSession();
@@ -82,6 +87,11 @@ export default function LoginPage() {
 
                 <form onSubmit={handleLogin}>
                     <CardContent className="flex flex-col gap-4">
+                        {registered && (
+                            <div className="rounded-md border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-700">
+                                Account created. Check your email, verify your account, then log in.
+                            </div>
+                        )}
                         {error && (
                             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                                 {error}

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -50,16 +49,7 @@ export default function RegisterPage() {
                 return;
             }
 
-            // automatically log in the user after successful registration
-            const login = await signIn("credentials", { email, password, redirect: false });
-
-            if (!login || login.error) {
-                setError("Registration successful, but login failed. Please try logging in.");
-                return;
-            }
-
-            router.push("/student");
-            router.refresh();
+            router.push(`/login?registered=1&email=${encodeURIComponent(email)}`);
         } catch (error) {
             console.error("Error during registration:", error);
             setError("Something went wrong. Please try again.");

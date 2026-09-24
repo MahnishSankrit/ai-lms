@@ -4,8 +4,13 @@ export async function sendVerificationEmail(
     email: string,
     token: string
 ) {
+    const appUrl = process.env.NEXTAUTH_URL || process.env.URL;
+    if (!appUrl) {
+        throw new Error("URL or NEXTAUTH_URL is not configured");
+    }
+
     const verificationLink =
-        `${process.env.URL}/verify-email?token=${token}`;
+        `${appUrl}/verify-email?token=${token}`;
 
     const { data, error } = await getResend().emails.send({
         from: "AI LMS <noreply@mahnish.me>",
@@ -33,8 +38,13 @@ export async function sendPasswordResetEmail(
     email: string,
     token: string
 ) {
+    const appUrl = process.env.NEXTAUTH_URL || process.env.URL;
+    if (!appUrl) {
+        throw new Error("URL or NEXTAUTH_URL is not configured");
+    }
+
     const resetLink =
-        `${process.env.URL}/reset-password?token=${token}`;
+        `${appUrl}/reset-password?token=${token}`;
 
     const { data, error } = await getResend().emails.send({
         from: "AI LMS <noreply@mahnish.me>",
@@ -62,8 +72,13 @@ export async function sendTeacherInviteEmail(
     email: string,
     token: string
 ) {
+    const appUrl = process.env.NEXTAUTH_URL || process.env.URL;
+    if (!appUrl) {
+        throw new Error("URL or NEXTAUTH_URL is not configured");
+    }
+
     const inviteLink =
-        `${process.env.URL}/teacher-invite/accept?token=${token}`;
+        `${appUrl}/teacher-invite/accept?token=${token}`;
 
     const { data, error } = await getResend().emails.send({
         from: "AI LMS <noreply@mahnish.me>",
