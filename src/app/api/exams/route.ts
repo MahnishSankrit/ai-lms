@@ -109,31 +109,56 @@ export async function POST(req: Request) {
             )
         }
 
+        const questionIds = validatedBody.questionIds;
+        if (questionIds.length > 0) {
+            const ownedQuestions = await prisma.question.findMany({
+                where: {
+                    id: { in: questionIds },
+                    createdById: user.id,
+                },
+                select: { id: true },
+            });
+
+            if (ownedQuestions.length !== questionIds.length) {
+                return NextResponse.json(
+                    { error: "One or more selected questions were not found or are not yours" },
+                    { status: 400 }
+                );
+            }
+        }
+
         // Same style of code as a classroom's joinCode: short, random,
         // shared with students separately from the exam link itself.
         const accessCode = Math.random().toString(36).substring(2, 8);
 
         // create the exam in the database
-        const exam = await prisma.exam.create({
-            data: {
-
-                classroomId: validateBody.classroomId,
-                createdById: user.id,
-                title: validatedBody.title,
-                description: validatedBody.description,
-                instructions: validatedBody.instructions,
-                durationMinutes: validatedBody.durationMinutes,
-                totalMarks: validatedBody.totalMarks,
-                passingMarks: validatedBody.passingMarks,
-                negativeMarking: validatedBody.negativeMarking,
-                shuffleQuestions: validatedBody.shuffleQuestions,
-                shuffleOptions: validatedBody.shuffleOptions,
-                fullscreenRequired: validatedBody.fullscreenRequired,
-                accessCode,
-                startsAt: validatedBody.startsAt,
-                endsAt: validatedBody.endsAt,
-            },
-        })
+        const exam = await prisma.$transaction((tx) =>
+            tx.exam.create({
+                data: {
+                    classroomId: validatedBody.classroomId,
+                    createdById: user.id,
+                    title: validatedBody.title,
+                    description: validatedBody.description,
+                    instructions: validatedBody.instructions,
+                    durationMinutes: validatedBody.durationMinutes,
+                    totalMarks: validatedBody.totalMarks,
+                    passingMarks: validatedBody.passingMarks,
+                    negativeMarking: validatedBody.negativeMarking,
+                    shuffleQuestions: validatedBody.shuffleQuestions,
+                    shuffleOptions: validatedBody.shuffleOptions,
+                    fullscreenRequired: validatedBody.fullscreenRequired,
+                    accessCode,
+                    startsAt: validatedBody.startsAt,
+                    endsAt: validatedBody.endsAt,
+                    questions: {
+                        create: questionIds.map((questionId, index) => ({
+                            questionId,
+                            order: index + 1,
+                        })),
+                    },
+                },
+            })
+        );
 
         return NextResponse.json(
             { message: "Exam created successfully", exam },
@@ -143,7 +168,7 @@ export async function POST(req: Request) {
 
 
     } catch (error) {
-        console.error("Error in creating exam:", error); 
+        console.error("Error in creating exam:", error);
         return NextResponse.json(
             { error: "Failed to create exam" },
             { status: 500 }

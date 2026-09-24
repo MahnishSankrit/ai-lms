@@ -12,10 +12,19 @@ type Classroom = {
     name: string;
 };
 
+type BankQuestion = {
+    id: string;
+    questionText: string;
+    marks: number;
+    type: string;
+};
+
 export default function NewExamPage() {
     const router = useRouter();
 
     const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+    const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([]);
+    const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
     const [classroomId, setClassroomId] = useState("");
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -23,19 +32,29 @@ export default function NewExamPage() {
     const [totalMarks, setTotalMarks] = useState(10);
     const [error, setError] = useState("");
     const [creating, setCreating] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch("/api/classrooms/get-classrooms")
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.classrooms) {
-                    setClassrooms(data.classrooms);
-                    if (data.classrooms.length > 0) {
-                        setClassroomId(data.classrooms[0].id);
+        Promise.all([
+            fetch("/api/classrooms/get-classrooms").then((response) => response.json()),
+            fetch("/api/questions/search?limit=1000", { cache: "no-store" }).then((response) => response.json()),
+        ])
+            .then(([classroomData, questionData]) => {
+                if (classroomData.classrooms) {
+                    setClassrooms(classroomData.classrooms);
+                    if (classroomData.classrooms.length > 0) {
+                        setClassroomId(classroomData.classrooms[0].id);
                     }
                 }
+                if (questionData.data) {
+                    setBankQuestions(questionData.data);
+                }
             })
-            .catch((err) => console.error("Error loading classrooms:", err));
+            .catch((err) => {
+                console.error("Error loading exam creation data:", err);
+                setError("Could not load classrooms or question bank.");
+            })
+            .finally(() => setLoading(false));
     }, []);
 
     const handleCreate = async (e: React.SubmitEvent<HTMLFormElement>) => {
@@ -56,6 +75,7 @@ export default function NewExamPage() {
                     shuffleQuestions: false,
                     shuffleOptions: false,
                     fullscreenRequired: false,
+                    questionIds: selectedQuestionIds,
                 }),
             });
 
@@ -74,6 +94,10 @@ export default function NewExamPage() {
             setCreating(false);
         }
     };
+
+    if (loading) {
+        return <p className="text-sm text-slate-500">Loading...</p>;
+    }
 
     if (classrooms.length === 0) {
         return (
@@ -154,6 +178,46 @@ export default function NewExamPage() {
                         className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
                     />
                 </label>
+
+                <fieldset className="mt-2 rounded-md border border-slate-200 p-3">
+                    <legend className="px-1 text-sm font-semibold text-slate-700">
+                        Add questions from your question bank
+                    </legend>
+                    {bankQuestions.length === 0 ? (
+                        <p className="text-sm text-slate-500">No questions in your question bank yet.</p>
+                    ) : (
+                        <div className="mt-2 flex max-h-72 flex-col gap-2 overflow-y-auto">
+                            {bankQuestions.map((question) => (
+                                <label
+                                    key={question.id}
+                                    className="flex cursor-pointer items-start gap-2 rounded-md border border-slate-100 p-2 text-sm hover:bg-slate-50"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedQuestionIds.includes(question.id)}
+                                        onChange={(event) => {
+                                            setSelectedQuestionIds((current) =>
+                                                event.target.checked
+                                                    ? [...current, question.id]
+                                                    : current.filter((id) => id !== question.id)
+                                            );
+                                        }}
+                                        className="mt-0.5"
+                                    />
+                                    <span className="min-w-0 flex-1 text-slate-700">
+                                        {question.questionText}
+                                        <span className="ml-2 text-xs text-slate-500">
+                                            {question.type} · {question.marks} mark{question.marks === 1 ? "" : "s"}
+                                        </span>
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+                    )}
+                    <p className="mt-2 text-xs text-slate-500">
+                        {selectedQuestionIds.length} question{selectedQuestionIds.length === 1 ? "" : "s"} selected
+                    </p>
+                </fieldset>
 
                 <button
                     type="submit"

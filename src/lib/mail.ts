@@ -1,4 +1,4 @@
-import { resend } from "./resend";
+import { getResend } from "./resend";
 
 export async function sendVerificationEmail(
     email: string,
@@ -7,7 +7,7 @@ export async function sendVerificationEmail(
     const verificationLink =
         `${process.env.URL}/verify-email?token=${token}`;
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
         from: "AI LMS <noreply@mahnish.me>",
         to: email,
         subject: "Verify your email",
@@ -36,7 +36,7 @@ export async function sendPasswordResetEmail(
     const resetLink =
         `${process.env.URL}/reset-password?token=${token}`;
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
         from: "AI LMS <noreply@mahnish.me>",
         to: email,
         subject: "Reset your password",
@@ -65,7 +65,7 @@ export async function sendTeacherInviteEmail(
     const inviteLink =
         `${process.env.URL}/teacher-invite/accept?token=${token}`;
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
         from: "AI LMS <noreply@mahnish.me>",
         to: email,
         subject: "You've been invited to teach on AI LMS",

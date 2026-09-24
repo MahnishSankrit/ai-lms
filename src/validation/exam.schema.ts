@@ -39,4 +39,6 @@ export const createExamSchema = z.object({
   startsAt: z.string().optional(),
 
   endsAt: z.string().optional(),
+
+  questionIds: z.array(z.string()).default([]),
 });

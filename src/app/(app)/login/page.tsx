@@ -54,8 +54,12 @@ export default function LoginPage() {
             }
 
             const role = session.user.role ?? "";
+            const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl");
+            const destination = callbackUrl?.startsWith("/") && !callbackUrl.startsWith("//")
+                ? callbackUrl
+                : ROLE_HOME[role] ?? "/";
 
-            router.replace(ROLE_HOME[role] ?? "/");
+            router.replace(destination);
             router.refresh();
         } catch (error) {
             console.error("Error during login:", error);

@@ -117,12 +117,14 @@ export default function EditExamPage() {
     };
 
     const loadBankQuestions = async () => {
-        const response = await fetch("/api/questions/get-questions");
+        const response = await fetch("/api/questions/search?limit=1000", {
+            cache: "no-store",
+        });
         const data = await response.json();
 
         // A 404 here just means the teacher has no questions yet.
         if (response.ok) {
-            setBankQuestions(data.questions);
+            setBankQuestions(data.data);
         }
     };
 

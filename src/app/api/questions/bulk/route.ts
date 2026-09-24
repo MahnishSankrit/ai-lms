@@ -17,6 +17,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createQuestionSchema } from "@/validation/question.schema";
 import { ZodError } from "zod";
+import { randomUUID } from "crypto";
 
 /**
  * @swagger
@@ -122,53 +123,29 @@ export async function POST(req: Request) {
             );
         }
 
-        await prisma.$transaction(async (tx) => {
+        const questionRows = questions.map((ques) => ({
+            id: randomUUID(),
+            createdById: teacher.id,
+            questionText: ques.questionText,
+            explanation: ques.explanation,
+            imageUrl: ques.imageUrl,
+            type: ques.type,
+            marks: ques.marks,
+            difficulty: ques.difficulty,
+        }));
 
-            for (const ques of questions) {
+        const optionRows = questions.flatMap((ques, index) =>
+            ques.options.map((opt) => ({
+                questionId: questionRows[index].id,
+                optionText: opt.optionText,
+                isCorrect: opt.isCorrect,
+            }))
+        );
 
-                await tx.question.create({
-
-                    data: {
-
-                        createdById: teacher.id,
-
-                        questionText: ques.questionText,
-
-                        explanation: ques.explanation,
-
-                        imageUrl: ques.imageUrl,
-
-                        type: ques.type,
-
-                        marks: ques.marks,
-
-                        difficulty: ques.difficulty,
-
-                        options: {
-
-                            create: ques.options.map((opt) => ({
-
-                                optionText: opt.optionText,
-
-                                isCorrect: opt.isCorrect,
-
-                            })),
-
-                        },
-
-                    },
-
-                });
-
-            }
-
-        }, {
-            // Default is 5000ms, which isn't enough once a batch has more
-            // than a handful of questions (each create() is a separate
-            // round trip). Bulk saves -- e.g. from the AI generator -- can
-            // easily have 10-100 questions, so this needs more room.
-            timeout: 30000,
-        });
+        await prisma.$transaction([
+            prisma.question.createMany({ data: questionRows }),
+            prisma.questionOption.createMany({ data: optionRows }),
+        ]);
 
         return NextResponse.json(
             {
