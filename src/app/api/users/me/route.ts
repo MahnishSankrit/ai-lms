@@ -32,12 +32,11 @@ export async function GET(req: Request) {
                 {status: 401}
             )
         }
-const session = await getServerSession(authOptions);
-
-console.log("SESSION =", session);
-        // this is the email of the currently logged in user, we can use this email to fetch the user details from the database
-        const email = sessionUser.user?.email;
-        if (!email) {
+        // Look the user up by id, not email: the email can be changed on the
+        // profile page, but the session keeps the old one until the next
+        // login -- so an email lookup would return "User not found".
+        const userId = sessionUser.user?.id;
+        if (!userId) {
             return NextResponse.json(
                 { error: "Unauthorized" },
                 { status: 401 }
@@ -46,7 +45,7 @@ console.log("SESSION =", session);
 
         const user = await prisma.user.findUnique({
             where: {
-                email: email,
+                id: userId,
             },
             select: {
               id: true,

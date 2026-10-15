@@ -4,6 +4,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import PageSkeleton from "@/components/page-skeleton";
 import Link from "next/link";
 
 type Exam = {
@@ -131,46 +132,46 @@ export default function TeacherExamsPage() {
     return (
         <div>
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-slate-900">My Exams</h1>
+                <h1 className="text-2xl font-bold tracking-tight">My Exams</h1>
                 <Link
                     href="/teacher/exams/new"
-                    className="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/80"
                 >
                     + New exam
                 </Link>
             </div>
 
-            {actionMessage && <p className="mt-3 text-sm text-red-600">{actionMessage}</p>}
+            {actionMessage && <p className="mt-3 text-sm text-destructive">{actionMessage}</p>}
 
             <div className="mt-6">
-                {loading && <p className="text-sm text-slate-500">Loading exams...</p>}
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {loading && <PageSkeleton />}
+                {error && <p className="text-sm text-destructive">{error}</p>}
 
                 {!loading && !error && exams.length === 0 && (
-                    <p className="text-sm text-slate-500">You haven&apos;t created any exam yet.</p>
+                    <p className="text-sm text-muted-foreground">You haven&apos;t created any exam yet.</p>
                 )}
 
                 <div className="mt-4 flex flex-col gap-3">
                     {exams.map((exam) => (
-                        <div key={exam.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-white p-4">
+                        <div key={exam.id} className="flex items-center justify-between rounded-md border border-border bg-card p-4">
                             <div>
-                                <p className="font-semibold text-slate-900">{exam.title}</p>
-                                <p className="text-sm text-slate-500">
+                                <p className="font-semibold text-foreground">{exam.title}</p>
+                                <p className="text-sm text-muted-foreground">
                                     {exam.classroom.name} · <span className="capitalize">{exam.status}</span>
                                 </p>
                             </div>
 
                             <div className="flex items-center gap-3 text-sm">
-                                <Link href={`/teacher/exams/${exam.id}/edit`} className="font-medium text-blue-700 hover:underline">
+                                <Link href={`/teacher/exams/${exam.id}/edit`} className="font-medium text-primary hover:underline">
                                     Edit
                                 </Link>
-                                <Link href={`/teacher/exams/${exam.id}/results`} className="font-medium text-blue-700 hover:underline">
+                                <Link href={`/teacher/exams/${exam.id}/results`} className="font-medium text-primary hover:underline">
                                     Results
                                 </Link>
                                 {exam.status === "draft" && (
                                     <button
                                         onClick={() => handlePublish(exam.id)}
-                                        className="font-medium text-green-700 hover:underline"
+                                        className="font-medium text-green-700 dark:text-green-400 hover:underline"
                                     >
                                         Publish
                                     </button>
@@ -178,7 +179,7 @@ export default function TeacherExamsPage() {
                                 {exam.status === "published" && (
                                     <button
                                         onClick={() => handleStart(exam.id)}
-                                        className="font-medium text-green-700 hover:underline"
+                                        className="font-medium text-green-700 dark:text-green-400 hover:underline"
                                     >
                                         Start
                                     </button>
@@ -186,14 +187,14 @@ export default function TeacherExamsPage() {
                                 {exam.status === "ongoing" && (
                                     <button
                                         onClick={() => handleEnd(exam.id)}
-                                        className="font-medium text-red-600 hover:underline"
+                                        className="font-medium text-destructive hover:underline"
                                     >
                                         End now
                                     </button>
                                 )}
                                 <button
                                     onClick={() => handleDelete(exam.id)}
-                                    className="font-medium text-red-600 hover:underline"
+                                    className="font-medium text-destructive hover:underline"
                                 >
                                     Delete
                                 </button>

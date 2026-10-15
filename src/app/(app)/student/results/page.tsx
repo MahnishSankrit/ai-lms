@@ -4,6 +4,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ClipboardList } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import EmptyState from "@/components/empty-state";
+import ErrorState from "@/components/error-state";
 
 type ResultSummary = {
     id: string; // this is the attemptId
@@ -48,13 +54,30 @@ export default function StudentResultsPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-slate-900">My Results</h1>
+            <h1 className="text-2xl font-bold tracking-tight">My Results</h1>
 
-            {loading && <p className="mt-4 text-sm text-slate-500">Loading results...</p>}
-            {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+            {loading && (
+                <div className="mt-4 flex flex-col gap-3">
+                    <Skeleton className="h-18 w-full rounded-xl" />
+                    <Skeleton className="h-18 w-full rounded-xl" />
+                    <Skeleton className="h-18 w-full rounded-xl" />
+                </div>
+            )}
+
+            {error && (
+                <div className="mt-4">
+                    <ErrorState message={error} onRetry={() => window.location.reload()} />
+                </div>
+            )}
 
             {!loading && !error && results.length === 0 && (
-                <p className="mt-4 text-sm text-slate-500">You haven&apos;t completed any exams yet.</p>
+                <div className="mt-4">
+                    <EmptyState
+                        icon={ClipboardList}
+                        title="No results yet"
+                        description="You haven't completed any exams yet."
+                    />
+                </div>
             )}
 
             <div className="mt-4 flex flex-col gap-3">
@@ -62,22 +85,18 @@ export default function StudentResultsPage() {
                     <Link
                         key={result.id}
                         href={`/student/exams/${result.examId}/results?attemptId=${result.id}`}
-                        className="flex items-center justify-between rounded-md border border-slate-200 bg-white p-4 hover:border-blue-400"
+                        className="flex items-center justify-between rounded-xl bg-card p-4 ring-1 ring-foreground/10 transition-colors hover:bg-muted/50 hover:ring-primary/40 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:bg-muted"
                     >
                         <div>
-                            <p className="font-semibold text-slate-900">{result.examTitle}</p>
-                            <p className="text-sm text-slate-500">
+                            <p className="font-semibold">{result.examTitle}</p>
+                            <p className="text-sm text-muted-foreground">
                                 {result.score ?? 0} / {result.totalMarks} · {result.percentage.toFixed(1)}%
                             </p>
                         </div>
 
-                        <span
-                            className={`rounded-md px-3 py-1 text-xs font-semibold ${
-                                result.pass ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                            }`}
-                        >
+                        <Badge variant={result.pass ? "default" : "destructive"}>
                             {result.pass ? "Pass" : "Fail"}
-                        </span>
+                        </Badge>
                     </Link>
                 ))}
             </div>

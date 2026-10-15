@@ -1,6 +1,7 @@
 // Top bar shown above every dashboard page, next to the sidebar.
 // Has: sidebar toggle, a search box (not wired to anything yet),
 // a real notifications bell, the theme toggle, and an account menu.
+// (No role chip here -- the sidebar header already says which dashboard you're on.)
 
 "use client"
 
@@ -11,11 +12,11 @@ import { signOut } from "next-auth/react";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
@@ -31,7 +32,7 @@ type Notification = {
     createdAt: string;
 };
 
-export default function DashboardTopbar({ email, role }: { email: string; role: string }) {
+export default function DashboardTopbar({ email }: { email: string }) {
     const initials = email.slice(0, 2).toUpperCase();
 
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -74,10 +75,6 @@ export default function DashboardTopbar({ email, role }: { email: string; role: 
             </div>
 
             <div className="ml-auto flex items-center gap-1">
-                <Badge variant="secondary" className="mr-1 hidden capitalize sm:inline-flex">
-                    {role}
-                </Badge>
-
                 <DropdownMenu onOpenChange={(open) => open && loadNotifications()}>
                     <DropdownMenuTrigger render={
                         <button
@@ -91,7 +88,7 @@ export default function DashboardTopbar({ email, role }: { email: string; role: 
                         )}
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-80">
-                        <div className="flex items-center justify-between px-2 py-1.5">
+                        <DropdownMenuGroup className="flex items-center justify-between px-2 py-1.5">
                             <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
                             {unreadCount > 0 && (
                                 <button
@@ -101,7 +98,7 @@ export default function DashboardTopbar({ email, role }: { email: string; role: 
                                     Mark all read
                                 </button>
                             )}
-                        </div>
+                        </DropdownMenuGroup>
                         <DropdownMenuSeparator />
 
                         {notifications.length === 0 ? (
@@ -138,9 +135,13 @@ export default function DashboardTopbar({ email, role }: { email: string; role: 
                         </Avatar>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
-                            {email}
-                        </DropdownMenuLabel>
+                        {/* Base UI's menu label must live inside a group, otherwise
+                            the menu throws "MenuGroupContext is missing" and never opens. */}
+                        <DropdownMenuGroup>
+                            <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
+                                {email}
+                            </DropdownMenuLabel>
+                        </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem render={<Link href="/profile" />}>
                             <User />

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/empty-state";
 import ScoreTrendChart from "@/components/score-trend-chart";
+import StatCard from "@/components/stat-card";
 
 type Exam = {
     id: string;
@@ -35,14 +36,16 @@ type AttemptHistoryEntry = {
     status: string;
     score: number | null;
     startedAt: string;
-    exam: { totalMarks: number };
+    exam: { title: string; totalMarks: number };
 };
+
+type TrendPoint = { label: string; value: number; name: string; date: string };
 
 export default function StudentDashboardPage() {
     const [classroomCount, setClassroomCount] = useState(0);
     const [upcomingExams, setUpcomingExams] = useState<Exam[]>([]);
     const [recentResults, setRecentResults] = useState<ResultSummary[]>([]);
-    const [trendPoints, setTrendPoints] = useState<{ label: string; value: number }[]>([]);
+    const [trendPoints, setTrendPoints] = useState<TrendPoint[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -84,13 +87,18 @@ export default function StudentDashboardPage() {
                         .sort((a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime());
 
                     setTrendPoints(
-                        graded.map((attempt) => ({
-                            label: new Date(attempt.startedAt).toLocaleDateString(undefined, {
+                        graded.map((attempt) => {
+                            const date = new Date(attempt.startedAt).toLocaleDateString(undefined, {
                                 month: "short",
                                 day: "numeric",
-                            }),
-                            value: (attempt.score! / attempt.exam.totalMarks) * 100,
-                        }))
+                            });
+                            return {
+                                label: date,
+                                value: (attempt.score! / attempt.exam.totalMarks) * 100,
+                                name: attempt.exam.title,
+                                date,
+                            };
+                        })
                     );
                 }
             } catch (error) {
@@ -120,37 +128,14 @@ export default function StudentDashboardPage() {
                 </div>
             ) : (
                 <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                    <Card>
-                        <CardContent className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-muted-foreground">Classrooms</p>
-                                <p className="mt-1 text-3xl font-bold">{classroomCount}</p>
-                            </div>
-                            <Building2 className="size-8 text-primary/60" />
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardContent className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-muted-foreground">Upcoming exams</p>
-                                <p className="mt-1 text-3xl font-bold">{upcomingExams.length}</p>
-                            </div>
-                            <CalendarClock className="size-8 text-primary/60" />
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardContent className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-muted-foreground">Recent average</p>
-                                <p className="mt-1 text-3xl font-bold">
-                                    {averagePercentage === null ? "—" : `${averagePercentage.toFixed(0)}%`}
-                                </p>
-                            </div>
-                            <BarChart3 className="size-8 text-primary/60" />
-                        </CardContent>
-                    </Card>
+                    <StatCard href="/student/classrooms" label="Classrooms" value={classroomCount} icon={Building2} />
+                    <StatCard href="/student/exams" label="Upcoming exams" value={upcomingExams.length} icon={CalendarClock} />
+                    <StatCard
+                        href="/student/results"
+                        label="Recent average"
+                        value={averagePercentage === null ? "—" : `${averagePercentage.toFixed(0)}%`}
+                        icon={BarChart3}
+                    />
                 </div>
             )}
 
@@ -174,7 +159,7 @@ export default function StudentDashboardPage() {
                                     <li key={exam.id}>
                                         <Link
                                             href={`/student/exams/${exam.id}`}
-                                            className="flex items-center justify-between rounded-lg border p-3 text-sm hover:border-primary/40"
+                                            className="flex items-center justify-between rounded-lg border p-3 text-sm transition-colors hover:border-primary/40 hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:bg-muted"
                                         >
                                             <div>
                                                 <p className="font-medium">{exam.title}</p>
@@ -212,7 +197,7 @@ export default function StudentDashboardPage() {
                                     <li key={result.id}>
                                         <Link
                                             href={`/student/exams/${result.examId}/results?attemptId=${result.id}`}
-                                            className="flex items-center justify-between rounded-lg border p-3 text-sm hover:border-primary/40"
+                                            className="flex items-center justify-between rounded-lg border p-3 text-sm transition-colors hover:border-primary/40 hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:bg-muted"
                                         >
                                             <span className="font-medium">{result.examTitle}</span>
                                             <Badge variant={result.pass ? "default" : "destructive"}>

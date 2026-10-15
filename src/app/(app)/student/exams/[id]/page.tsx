@@ -16,6 +16,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import PageSkeleton from "@/components/page-skeleton";
 import { useParams, useRouter } from "next/navigation";
 
 type Option = {
@@ -286,20 +287,20 @@ export default function TakeExamPage() {
     };
 
     if (status === "loading") {
-        return <p className="text-sm text-slate-500">Loading exam...</p>;
+        return <PageSkeleton />;
     }
 
     if (status === "error") {
-        return <p className="text-sm text-red-600">{error}</p>;
+        return <p className="text-sm text-destructive">{error}</p>;
     }
 
     if (status === "already-done") {
         return (
             <div>
-                <p className="text-sm text-slate-700">
+                <p className="text-sm text-foreground">
                     You have already completed this exam.
                 </p>
-                <a href="/student/results" className="mt-2 inline-block text-sm font-semibold text-blue-700 hover:underline">
+                <a href="/student/results" className="mt-2 inline-block text-sm font-semibold text-primary hover:underline">
                     View my results
                 </a>
             </div>
@@ -313,32 +314,32 @@ export default function TakeExamPage() {
     if (status === "needs-code") {
         return (
             <div className="mx-auto max-w-sm">
-                <h1 className="text-2xl font-bold text-slate-900">{exam.title}</h1>
-                <p className="mt-2 text-sm text-slate-600">
+                <h1 className="text-2xl font-bold tracking-tight">{exam.title}</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                     {exam.duration} minutes · {exam.questions.length} question(s)
                 </p>
 
                 <form onSubmit={handleStartAttempt} className="mt-6 flex flex-col gap-3">
                     {exam.requiresAccessCode && (
                         <>
-                            <label className="text-sm font-medium text-slate-700">
+                            <label className="text-sm font-medium text-foreground">
                                 Enter the exam code your teacher gave you
                                 <input
                                     type="text"
                                     required
                                     value={accessCode}
                                     onChange={(e) => setAccessCode(e.target.value)}
-                                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
+                                    className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
                                 />
                             </label>
-                            {codeError && <p className="text-sm text-red-600">{codeError}</p>}
+                            {codeError && <p className="text-sm text-destructive">{codeError}</p>}
                         </>
                     )}
 
                     <button
                         type="submit"
                         disabled={startingAttempt}
-                        className="rounded-md bg-blue-700 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
+                        className="rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
                     >
                         {startingAttempt ? "Starting..." : "Start exam"}
                     </button>
@@ -354,26 +355,26 @@ export default function TakeExamPage() {
     return (
         <div>
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-slate-900">{exam.title}</h1>
-                <span className="rounded-md bg-red-50 px-3 py-1 text-sm font-semibold text-red-700">
+                <h1 className="text-2xl font-bold tracking-tight">{exam.title}</h1>
+                <span className="rounded-md bg-destructive/10 px-3 py-1 text-sm font-semibold text-destructive">
                     Time left: {timeLabel}
                 </span>
             </div>
 
-            {exam.description && <p className="mt-2 text-sm text-slate-600">{exam.description}</p>}
+            {exam.description && <p className="mt-2 text-sm text-muted-foreground">{exam.description}</p>}
 
             {saveError && (
-                <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <p className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                     {saveError}
                 </p>
             )}
 
             <div className="mt-8 flex flex-col gap-6">
                 {exam.questions.map((question, index) => (
-                    <div key={question.id} className="rounded-md border border-slate-200 bg-white p-4">
-                        <p className="font-medium text-slate-900">
+                    <div key={question.id} className="rounded-md border border-border bg-card p-4">
+                        <p className="font-medium text-foreground">
                             {index + 1}. {question.question}{" "}
-                            <span className="text-xs font-normal text-slate-400">({question.marks} marks)</span>
+                            <span className="text-xs font-normal text-muted-foreground">({question.marks} marks)</span>
                         </p>
 
                         {question.type === "short_answer" ? (
@@ -384,7 +385,7 @@ export default function TakeExamPage() {
                                     handleSaveTextAnswer(question.id, e.target.value);
                                 }}
                                 placeholder="Type your answer..."
-                                className="mt-3 w-full rounded-md border border-slate-300 p-2 text-sm outline-none focus:border-blue-600"
+                                className="mt-3 w-full rounded-md border border-input p-2 text-sm outline-none focus:border-ring"
                                 rows={3}
                             />
                         ) : (
@@ -392,7 +393,7 @@ export default function TakeExamPage() {
                                 {question.options.map((option) => (
                                     <label
                                         key={option.id}
-                                        className="flex items-center gap-2 text-sm text-slate-700"
+                                        className="flex items-center gap-2 text-sm text-foreground"
                                     >
                                         <input
                                             type="radio"
@@ -416,7 +417,7 @@ export default function TakeExamPage() {
                     }
                 }}
                 disabled={submitting}
-                className="mt-8 rounded-md bg-blue-700 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
+                className="mt-8 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
             >
                 {submitting ? "Submitting..." : "Submit exam"}
             </button>

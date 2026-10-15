@@ -98,7 +98,7 @@ export default function ProfilePage() {
 
     if (loading) {
         return (
-            <div className="mx-auto flex max-w-lg flex-col gap-4">
+            <div className="flex max-w-lg flex-col gap-4">
                 <Skeleton className="h-8 w-40" />
                 <Skeleton className="h-48 w-full rounded-xl" />
             </div>
@@ -110,7 +110,7 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="mx-auto max-w-lg">
+        <div className="max-w-lg">
             <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
 
             <Card className="mt-6">

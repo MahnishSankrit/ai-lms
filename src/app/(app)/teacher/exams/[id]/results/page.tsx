@@ -4,6 +4,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import PageSkeleton from "@/components/page-skeleton";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -55,55 +56,55 @@ export default function ExamResultsPage() {
             .finally(() => setLoading(false));
     }, [examId]);
 
-    if (loading) return <p className="text-sm text-slate-500">Loading results...</p>;
-    if (error) return <p className="text-sm text-red-600">{error}</p>;
+    if (loading) return <PageSkeleton />;
+    if (error) return <p className="text-sm text-destructive">{error}</p>;
     if (!statistic) return null;
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-slate-900">{examTitle} — Results</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{examTitle} — Results</h1>
 
             <div className="mt-4 flex flex-wrap gap-4">
-                <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs text-slate-500">Attempts</p>
-                    <p className="text-lg font-semibold text-slate-900">{statistic.totalAttempts}</p>
+                <div className="rounded-md border border-border bg-card px-4 py-3">
+                    <p className="text-xs text-muted-foreground">Attempts</p>
+                    <p className="text-lg font-semibold text-foreground">{statistic.totalAttempts}</p>
                 </div>
-                <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs text-slate-500">Average</p>
-                    <p className="text-lg font-semibold text-slate-900">{statistic.averageScore.toFixed(1)}</p>
+                <div className="rounded-md border border-border bg-card px-4 py-3">
+                    <p className="text-xs text-muted-foreground">Average</p>
+                    <p className="text-lg font-semibold text-foreground">{statistic.averageScore.toFixed(1)}</p>
                 </div>
-                <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs text-slate-500">Highest</p>
-                    <p className="text-lg font-semibold text-slate-900">{statistic.highestScore}</p>
+                <div className="rounded-md border border-border bg-card px-4 py-3">
+                    <p className="text-xs text-muted-foreground">Highest</p>
+                    <p className="text-lg font-semibold text-foreground">{statistic.highestScore}</p>
                 </div>
-                <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs text-slate-500">Lowest</p>
-                    <p className="text-lg font-semibold text-slate-900">{statistic.lowestScore}</p>
+                <div className="rounded-md border border-border bg-card px-4 py-3">
+                    <p className="text-xs text-muted-foreground">Lowest</p>
+                    <p className="text-lg font-semibold text-foreground">{statistic.lowestScore}</p>
                 </div>
-                <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3">
-                    <p className="text-xs text-slate-500">Passed</p>
-                    <p className="text-lg font-semibold text-green-700">{statistic.passcount}</p>
+                <div className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3">
+                    <p className="text-xs text-muted-foreground">Passed</p>
+                    <p className="text-lg font-semibold text-green-700 dark:text-green-400">{statistic.passcount}</p>
                 </div>
-                <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3">
-                    <p className="text-xs text-slate-500">Failed</p>
-                    <p className="text-lg font-semibold text-red-700">{statistic.failcount}</p>
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
+                    <p className="text-xs text-muted-foreground">Failed</p>
+                    <p className="text-lg font-semibold text-destructive">{statistic.failcount}</p>
                 </div>
             </div>
 
-            <h2 className="mt-8 text-lg font-semibold text-slate-900">Student attempts</h2>
+            <h2 className="mt-8 text-lg font-semibold text-foreground">Student attempts</h2>
 
-            {attempts.length === 0 && <p className="mt-2 text-sm text-slate-500">No attempts yet.</p>}
+            {attempts.length === 0 && <p className="mt-2 text-sm text-muted-foreground">No attempts yet.</p>}
 
             <div className="mt-4 flex flex-col gap-2">
                 {attempts.map((attempt) => (
                     <Link
                         key={attempt.id}
                         href={`/teacher/exams/${examId}/results/${attempt.id}`}
-                        className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-3 text-sm hover:border-blue-400"
+                        className="flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm transition-colors hover:border-primary/40 hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:bg-muted"
                     >
-                        <span className="text-slate-700">{attempt.student.email}</span>
-                        <span className="capitalize text-slate-500">{attempt.status}</span>
-                        <span className="font-semibold text-slate-900">{attempt.score ?? "-"}</span>
+                        <span className="text-foreground">{attempt.student.email}</span>
+                        <span className="capitalize text-muted-foreground">{attempt.status}</span>
+                        <span className="font-semibold text-foreground">{attempt.score ?? "-"}</span>
                     </Link>
                 ))}
             </div>

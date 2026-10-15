@@ -78,8 +78,8 @@ export default function StudentExamsPage() {
 
                 <div className="flex flex-col gap-3">
                     {exams.map((exam) => (
-                        <Link key={exam.id} href={`/student/exams/${exam.id}`}>
-                            <Card className="transition hover:border-primary/40 hover:shadow-md">
+                        <Link key={exam.id} href={`/student/exams/${exam.id}`} className="group/card-link rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+                            <Card className="h-full transition hover:bg-muted/50 hover:shadow-md hover:ring-primary/40 group-active/card-link:bg-muted">
                                 <CardContent className="flex items-center justify-between">
                                     <div>
                                         <p className="font-medium">{exam.title}</p>

@@ -5,6 +5,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import PageSkeleton from "@/components/page-skeleton";
 import { useRouter } from "next/navigation";
 
 type Classroom = {
@@ -96,12 +97,12 @@ export default function NewExamPage() {
     };
 
     if (loading) {
-        return <p className="text-sm text-slate-500">Loading...</p>;
+        return <PageSkeleton />;
     }
 
     if (classrooms.length === 0) {
         return (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
                 You need a classroom before creating an exam. Create one from the Classrooms page first.
             </p>
         );
@@ -109,22 +110,22 @@ export default function NewExamPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-slate-900">New Exam</h1>
+            <h1 className="text-2xl font-bold tracking-tight">New Exam</h1>
 
             <form onSubmit={handleCreate} className="mt-6 flex max-w-md flex-col gap-3">
                 {error && (
-                    <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                         {error}
                     </div>
                 )}
 
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-foreground">
                     Classroom
                     <select
                         required
                         value={classroomId}
                         onChange={(e) => setClassroomId(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
+                        className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
                     >
                         {classrooms.map((classroom) => (
                             <option key={classroom.id} value={classroom.id}>
@@ -134,7 +135,7 @@ export default function NewExamPage() {
                     </select>
                 </label>
 
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-foreground">
                     Title
                     <input
                         type="text"
@@ -142,20 +143,20 @@ export default function NewExamPage() {
                         minLength={3}
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
+                        className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
                     />
                 </label>
 
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-foreground">
                     Description (optional)
                     <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
+                        className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
                     />
                 </label>
 
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-foreground">
                     Duration (minutes)
                     <input
                         type="number"
@@ -163,11 +164,11 @@ export default function NewExamPage() {
                         min={1}
                         value={durationMinutes}
                         onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
+                        className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
                     />
                 </label>
 
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-foreground">
                     Total marks
                     <input
                         type="number"
@@ -175,22 +176,22 @@ export default function NewExamPage() {
                         min={1}
                         value={totalMarks}
                         onChange={(e) => setTotalMarks(Number(e.target.value))}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
+                        className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
                     />
                 </label>
 
-                <fieldset className="mt-2 rounded-md border border-slate-200 p-3">
-                    <legend className="px-1 text-sm font-semibold text-slate-700">
+                <fieldset className="mt-2 rounded-md border border-border p-3">
+                    <legend className="px-1 text-sm font-semibold text-foreground">
                         Add questions from your question bank
                     </legend>
                     {bankQuestions.length === 0 ? (
-                        <p className="text-sm text-slate-500">No questions in your question bank yet.</p>
+                        <p className="text-sm text-muted-foreground">No questions in your question bank yet.</p>
                     ) : (
                         <div className="mt-2 flex max-h-72 flex-col gap-2 overflow-y-auto">
                             {bankQuestions.map((question) => (
                                 <label
                                     key={question.id}
-                                    className="flex cursor-pointer items-start gap-2 rounded-md border border-slate-100 p-2 text-sm hover:bg-slate-50"
+                                    className="flex cursor-pointer items-start gap-2 rounded-md border border-border p-2 text-sm hover:bg-muted"
                                 >
                                     <input
                                         type="checkbox"
@@ -204,9 +205,9 @@ export default function NewExamPage() {
                                         }}
                                         className="mt-0.5"
                                     />
-                                    <span className="min-w-0 flex-1 text-slate-700">
+                                    <span className="min-w-0 flex-1 text-foreground">
                                         {question.questionText}
-                                        <span className="ml-2 text-xs text-slate-500">
+                                        <span className="ml-2 text-xs text-muted-foreground">
                                             {question.type} · {question.marks} mark{question.marks === 1 ? "" : "s"}
                                         </span>
                                     </span>
@@ -214,7 +215,7 @@ export default function NewExamPage() {
                             ))}
                         </div>
                     )}
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-muted-foreground">
                         {selectedQuestionIds.length} question{selectedQuestionIds.length === 1 ? "" : "s"} selected
                     </p>
                 </fieldset>
@@ -222,7 +223,7 @@ export default function NewExamPage() {
                 <button
                     type="submit"
                     disabled={creating}
-                    className="mt-2 rounded-md bg-blue-700 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
+                    className="mt-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
                 >
                     {creating ? "Creating..." : "Create exam"}
                 </button>

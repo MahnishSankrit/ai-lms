@@ -9,6 +9,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import PageSkeleton from "@/components/page-skeleton";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -301,8 +302,8 @@ export default function EditExamPage() {
         }
     };
 
-    if (loading) return <p className="text-sm text-slate-500">Loading...</p>;
-    if (error) return <p className="text-sm text-red-600">{error}</p>;
+    if (loading) return <PageSkeleton />;
+    if (error) return <p className="text-sm text-destructive">{error}</p>;
     if (!exam) return null;
 
     const attachedQuestionIds = exam.questions.map((q) => q.question.id);
@@ -311,31 +312,31 @@ export default function EditExamPage() {
     return (
         <div>
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-slate-900">{exam.title}</h1>
-                <span className="rounded-md bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-600">
+                <h1 className="text-2xl font-bold tracking-tight">{exam.title}</h1>
+                <span className="rounded-md bg-muted px-3 py-1 text-xs font-semibold capitalize text-muted-foreground">
                     {exam.status}
                 </span>
             </div>
 
-            {message && <p className="mt-3 text-sm text-slate-600">{message}</p>}
+            {message && <p className="mt-3 text-sm text-muted-foreground">{message}</p>}
 
-            <div className="mt-6 flex max-w-md flex-col gap-3 rounded-md border border-slate-200 bg-white p-4">
-                <p className="text-sm font-semibold text-slate-700">Share with students</p>
+            <div className="mt-6 flex max-w-md flex-col gap-3 rounded-md border border-border bg-card p-4">
+                <p className="text-sm font-semibold text-foreground">Share with students</p>
 
                 <div>
-                    <label className="text-xs font-medium text-slate-500">Exam link</label>
+                    <label className="text-xs font-medium text-muted-foreground">Exam link</label>
                     <div className="mt-1 flex gap-2">
                         <input
                             readOnly
                             value={`${typeof window !== "undefined" ? window.location.origin : ""}/student/exams/${examId}`}
-                            className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                            className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm"
                         />
                         <button
                             type="button"
                             onClick={() =>
                                 handleCopy(`${window.location.origin}/student/exams/${examId}`, "Link")
                             }
-                            className="shrink-0 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                            className="shrink-0 rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-muted"
                         >
                             Copy
                         </button>
@@ -343,26 +344,26 @@ export default function EditExamPage() {
                 </div>
 
                 <div>
-                    <label className="text-xs font-medium text-slate-500">
+                    <label className="text-xs font-medium text-muted-foreground">
                         Exam code (share this separately -- students need it to start)
                     </label>
                     <div className="mt-1 flex gap-2">
                         <input
                             readOnly
                             value={exam.accessCode || ""}
-                            className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-mono"
+                            className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm font-mono"
                         />
                         <button
                             type="button"
                             onClick={() => exam.accessCode && handleCopy(exam.accessCode, "Code")}
-                            className="shrink-0 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                            className="shrink-0 rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-muted"
                         >
                             Copy
                         </button>
                         <button
                             type="button"
                             onClick={handleRegenerateCode}
-                            className="shrink-0 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                            className="shrink-0 rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-muted"
                         >
                             Regenerate
                         </button>
@@ -370,30 +371,30 @@ export default function EditExamPage() {
                 </div>
             </div>
 
-            <form onSubmit={handleSaveInfo} className="mt-6 flex max-w-md flex-col gap-3 rounded-md border border-slate-200 bg-white p-4">
-                <p className="text-sm font-semibold text-slate-700">Exam details</p>
+            <form onSubmit={handleSaveInfo} className="mt-6 flex max-w-md flex-col gap-3 rounded-md border border-border bg-card p-4">
+                <p className="text-sm font-semibold text-foreground">Exam details</p>
 
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-foreground">
                     Title
                     <input
                         type="text"
                         required
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
+                        className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
                     />
                 </label>
 
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-foreground">
                     Description
                     <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
+                        className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
                     />
                 </label>
 
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-foreground">
                     Duration (minutes)
                     <input
                         type="number"
@@ -401,34 +402,34 @@ export default function EditExamPage() {
                         min={1}
                         value={durationMinutes}
                         onChange={(e) => handleDurationChange(Number(e.target.value))}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
+                        className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
                     />
                 </label>
 
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-foreground">
                     Starts at
                     <input
                         type="datetime-local"
                         value={startsAt}
                         onChange={(e) => handleStartsAtChange(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
+                        className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
                     />
                 </label>
 
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-foreground">
                     Ends at
                     <input
                         type="datetime-local"
                         value={endsAt}
                         onChange={(e) => setEndsAt(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
+                        className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
                     />
                 </label>
 
                 <button
                     type="submit"
                     disabled={saving}
-                    className="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
+                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
                 >
                     {saving ? "Saving..." : "Save changes"}
                 </button>
@@ -437,7 +438,7 @@ export default function EditExamPage() {
                     <button
                         type="button"
                         onClick={handlePublish}
-                        className="rounded-md border border-green-600 px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-50"
+                        className="rounded-md border border-green-600 px-4 py-2 text-sm font-semibold text-green-700 dark:text-green-400 hover:bg-green-500/10"
                     >
                         Publish exam
                     </button>
@@ -447,7 +448,7 @@ export default function EditExamPage() {
                     <button
                         type="button"
                         onClick={handleStart}
-                        className="rounded-md border border-green-600 px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-50"
+                        className="rounded-md border border-green-600 px-4 py-2 text-sm font-semibold text-green-700 dark:text-green-400 hover:bg-green-500/10"
                     >
                         Start exam
                     </button>
@@ -457,59 +458,59 @@ export default function EditExamPage() {
                     <button
                         type="button"
                         onClick={handleEnd}
-                        className="rounded-md border border-red-600 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                        className="rounded-md border border-destructive px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10"
                     >
                         End exam now
                     </button>
                 )}
 
                 {exam.status === "completed" && (
-                    <p className="text-sm text-slate-500">This exam has ended.</p>
+                    <p className="text-sm text-muted-foreground">This exam has ended.</p>
                 )}
             </form>
 
             <div className="mt-8 grid gap-8 sm:grid-cols-2">
                 <div>
-                    <h2 className="text-lg font-semibold text-slate-900">
+                    <h2 className="text-lg font-semibold text-foreground">
                         Questions in this exam ({exam.questions.length})
                     </h2>
                     <div className="mt-3 flex flex-col gap-2">
                         {exam.questions.map((attached) => (
-                            <div key={attached.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2">
-                                <span className="text-sm text-slate-700">{attached.question.questionText}</span>
+                            <div key={attached.id} className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2">
+                                <span className="text-sm text-foreground">{attached.question.questionText}</span>
                                 <button
                                     onClick={() => handleRemoveQuestion(attached.id)}
-                                    className="text-xs font-medium text-red-600 hover:underline"
+                                    className="text-xs font-medium text-destructive hover:underline"
                                 >
                                     Remove
                                 </button>
                             </div>
                         ))}
                         {exam.questions.length === 0 && (
-                            <p className="text-sm text-slate-500">No questions added yet.</p>
+                            <p className="text-sm text-muted-foreground">No questions added yet.</p>
                         )}
                     </div>
                 </div>
 
                 <div>
-                    <h2 className="text-lg font-semibold text-slate-900">Your question bank</h2>
+                    <h2 className="text-lg font-semibold text-foreground">Your question bank</h2>
                     <div className="mt-3 flex flex-col gap-2">
                         {availableQuestions.map((question) => (
-                            <div key={question.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2">
-                                <span className="text-sm text-slate-700">{question.questionText}</span>
+                            <div key={question.id} className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2">
+                                <span className="text-sm text-foreground">{question.questionText}</span>
                                 <button
                                     onClick={() => handleAddQuestion(question.id)}
-                                    className="text-xs font-medium text-blue-700 hover:underline"
+                                    className="text-xs font-medium text-primary hover:underline"
                                 >
                                     Add
                                 </button>
                             </div>
                         ))}
                         {availableQuestions.length === 0 && (
-                            <p className="text-sm text-slate-500">No more questions available.</p>
+                            <p className="text-sm text-muted-foreground">No more questions available.</p>
                         )}
                     </div>
-                    <Link href="/teacher/questions" className="mt-3 inline-block text-sm font-semibold text-blue-700 hover:underline">
+                    <Link href="/teacher/questions" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
                         + Create a new question
                     </Link>
                 </div>

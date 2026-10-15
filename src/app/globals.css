@@ -127,4 +127,21 @@
   html {
     @apply font-sans;
   }
+
+  /* Keyboard focus ring for every link and button, including the plain
+     hand-written ones that don't use the <Button> component. Shows only
+     for keyboard focus (:focus-visible), not mouse clicks. Components
+     that draw their own ring use `outline-none`, which overrides this
+     (utility classes win over the base layer). */
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  /* Small "pressed" feedback for plain buttons. */
+  button:not(:disabled):active {
+    @apply translate-y-px;
+  }
 }

@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -32,5 +32,42 @@ export default function ThemeToggle() {
         >
             {isDark ? <Sun /> : <Moon />}
         </Button>
+    );
+}
+
+// Three-way picker used on the Settings page: Light / Dark / System.
+// "System" follows the operating system's dark-mode setting, which the
+// quick toggle button in the top bar can't express.
+const THEME_OPTIONS = [
+    { value: "light", label: "Light", icon: Sun },
+    { value: "dark", label: "Dark", icon: Moon },
+    { value: "system", label: "System", icon: Monitor },
+];
+
+export function ThemePicker() {
+    const { theme, setTheme } = useTheme();
+
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
+    return (
+        <div className="flex gap-2" role="radiogroup" aria-label="Theme">
+            {THEME_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                const selected = mounted && theme === option.value;
+                return (
+                    <Button
+                        key={option.value}
+                        variant={selected ? "default" : "outline"}
+                        size="sm"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => setTheme(option.value)}
+                    >
+                        <Icon /> {option.label}
+                    </Button>
+                );
+            })}
+        </div>
     );
 }

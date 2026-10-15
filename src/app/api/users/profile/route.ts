@@ -59,9 +59,11 @@ export async function PATCH(req: Request){
             updateData.password = hashedPassword;
         }
 
-        const userEmail = user.user.email;
+        // Use the id (never changes) instead of the email, which may already
+        // have been changed by an earlier save in this same session.
+        const userId = user.user.id;
 
-        if (!userEmail) {
+        if (!userId) {
             return NextResponse.json(
                 {error: "Unauthorized"},
                 {status: 401}
@@ -70,7 +72,7 @@ export async function PATCH(req: Request){
 
         const updatedUser = await prisma.user.update({
             where: {
-                email: userEmail,
+                id: userId,
             },
             data: updateData,
         })

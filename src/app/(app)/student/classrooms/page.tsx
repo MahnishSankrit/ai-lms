@@ -124,8 +124,8 @@ export default function StudentClassroomsPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     {classrooms.map((classroom) => (
-                        <Link key={classroom.id} href={`/student/classrooms/${classroom.id}`}>
-                            <Card className="transition hover:border-primary/40 hover:shadow-md">
+                        <Link key={classroom.id} href={`/student/classrooms/${classroom.id}`} className="group/card-link rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+                            <Card className="h-full transition hover:bg-muted/50 hover:shadow-md hover:ring-primary/40 group-active/card-link:bg-muted">
                                 <CardContent>
                                     <p className="font-semibold">{classroom.name}</p>
                                     <p className="text-sm text-muted-foreground">{classroom.subject || "No subject"}</p>

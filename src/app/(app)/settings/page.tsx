@@ -1,30 +1,25 @@
-// Settings page. There's no per-user settings model in the backend yet
-// (no notification preferences, etc.), so the only real setting here is
-// appearance, which is handled client-side by next-themes. Kept honest
-// rather than faking toggles that don't do anything.
+// Settings page. There's no per-user settings model in the backend yet,
+// so the only real setting here is appearance, which is handled
+// client-side by next-themes. Unbuilt sections are simply left out
+// (rather than shown as "coming soon" notes to users).
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import ThemeToggle from "@/components/theme-toggle";
+import { ThemePicker } from "@/components/theme-toggle";
 
 export default function SettingsPage() {
     return (
-        <div className="mx-auto max-w-lg">
+        <div className="max-w-lg">
             <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
 
             <Card className="mt-6">
                 <CardHeader>
                     <CardTitle>Appearance</CardTitle>
-                    <CardDescription>Switch between light and dark mode.</CardDescription>
+                    <CardDescription>Choose light or dark mode, or follow your device setting.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Theme</span>
-                    <ThemeToggle />
+                <CardContent>
+                    <ThemePicker />
                 </CardContent>
             </Card>
-
-            <p className="mt-4 text-sm text-muted-foreground">
-                More account settings (notifications, etc.) aren&apos;t built on the backend yet.
-            </p>
         </div>
     );
 }

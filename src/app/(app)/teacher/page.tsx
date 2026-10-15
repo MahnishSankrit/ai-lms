@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/empty-state";
 import ScoreTrendChart from "@/components/score-trend-chart";
+import StatCard from "@/components/stat-card";
 
 type Exam = {
     id: string;
@@ -35,6 +36,7 @@ type Exam = {
 
 type Classroom = { id: string };
 type Member = { userId: string };
+type TrendPoint = { label: string; value: number; name: string; date: string };
 
 export default function TeacherDashboardPage() {
     const [classroomCount, setClassroomCount] = useState(0);
@@ -42,7 +44,7 @@ export default function TeacherDashboardPage() {
     const [exams, setExams] = useState<Exam[]>([]);
     const [questionCount, setQuestionCount] = useState(0);
     const [averageScore, setAverageScore] = useState<number | null>(null);
-    const [examScorePoints, setExamScorePoints] = useState<{ label: string; value: number }[]>([]);
+    const [examScorePoints, setExamScorePoints] = useState<TrendPoint[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -98,10 +100,15 @@ export default function TeacherDashboardPage() {
                         return {
                             label: exam.title.length > 12 ? `${exam.title.slice(0, 12)}...` : exam.title,
                             value: (result.statistic.averageScore / exam.totalMarks) * 100,
+                            name: exam.title,
+                            date: new Date(exam.startsAt ?? exam.createdAt).toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                            }),
                         };
                     })
                     .reverse() // recentExams is newest-first; charts read left-to-right chronologically
-                    .filter((point): point is { label: string; value: number } => point !== null);
+                    .filter((point): point is TrendPoint => point !== null);
                 setExamScorePoints(points);
             } catch (error) {
                 console.error("Error loading teacher dashboard:", error);
@@ -146,43 +153,16 @@ export default function TeacherDashboardPage() {
                 </div>
             ) : (
                 <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                    <Card>
-                        <CardContent>
-                            <Users className="size-5 text-primary/60" />
-                            <p className="mt-2 text-2xl font-bold">{studentCount}</p>
-                            <p className="text-xs text-muted-foreground">Students</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent>
-                            <Building2 className="size-5 text-primary/60" />
-                            <p className="mt-2 text-2xl font-bold">{classroomCount}</p>
-                            <p className="text-xs text-muted-foreground">Classrooms</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent>
-                            <FileText className="size-5 text-primary/60" />
-                            <p className="mt-2 text-2xl font-bold">{exams.length}</p>
-                            <p className="text-xs text-muted-foreground">Exams</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent>
-                            <BookOpen className="size-5 text-primary/60" />
-                            <p className="mt-2 text-2xl font-bold">{questionCount}</p>
-                            <p className="text-xs text-muted-foreground">Questions</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent>
-                            <BarChart3 className="size-5 text-primary/60" />
-                            <p className="mt-2 text-2xl font-bold">
-                                {averageScore === null ? "—" : averageScore.toFixed(1)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">Avg. score</p>
-                        </CardContent>
-                    </Card>
+                    <StatCard href="/teacher/classrooms" label="Students" value={studentCount} icon={Users} />
+                    <StatCard href="/teacher/classrooms" label="Classrooms" value={classroomCount} icon={Building2} />
+                    <StatCard href="/teacher/exams" label="Exams" value={exams.length} icon={FileText} />
+                    <StatCard href="/teacher/questions" label="Questions" value={questionCount} icon={BookOpen} />
+                    <StatCard
+                        href="/teacher/results"
+                        label="Avg. score"
+                        value={averageScore === null ? "—" : averageScore.toFixed(1)}
+                        icon={BarChart3}
+                    />
                 </div>
             )}
 
@@ -198,7 +178,10 @@ export default function TeacherDashboardPage() {
                             <ul className="flex flex-col gap-2">
                                 {upcomingExams.map((exam) => (
                                     <li key={exam.id}>
-                                        <Link href={`/teacher/exams/${exam.id}/edit`} className="text-sm hover:underline">
+                                        <Link
+                                            href={`/teacher/exams/${exam.id}/edit`}
+                                            className="block rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:bg-muted"
+                                        >
                                             {exam.title}
                                         </Link>
                                     </li>
@@ -218,8 +201,13 @@ export default function TeacherDashboardPage() {
                         ) : (
                             <ul className="flex flex-col gap-2">
                                 {recentActivity.map((exam) => (
-                                    <li key={exam.id} className="text-sm text-muted-foreground">
-                                        Created <span className="font-medium text-foreground">{exam.title}</span>
+                                    <li key={exam.id}>
+                                        <Link
+                                            href={`/teacher/exams/${exam.id}/edit`}
+                                            className="block rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:bg-muted"
+                                        >
+                                            Created <span className="font-medium text-foreground">{exam.title}</span>
+                                        </Link>
                                     </li>
                                 ))}
                             </ul>

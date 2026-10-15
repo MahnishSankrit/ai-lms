@@ -6,6 +6,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type User = {
     id: string;
@@ -32,24 +33,24 @@ export default function AdminLogsPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-slate-900">Logs</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Logs</h1>
 
-            <div className="mt-4 rounded-md border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-                There isn&apos;t a real system-logs feature built yet (no log storage in the
-                database, no logs API). Below is the closest thing available right now:
-                recently created accounts.
-            </div>
+            <h2 className="mt-6 text-lg font-semibold">Recent signups</h2>
 
-            <h2 className="mt-8 text-lg font-semibold text-slate-900">Recent signups</h2>
-
-            {loading && <p className="mt-2 text-sm text-slate-500">Loading...</p>}
+            {loading && (
+                <div className="mt-4 flex flex-col gap-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <Skeleton key={i} className="h-11 w-full rounded-md" />
+                    ))}
+                </div>
+            )}
 
             <div className="mt-4 flex flex-col gap-2">
                 {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-3 text-sm">
-                        <span className="text-slate-700">{user.email}</span>
-                        <span className="capitalize text-slate-500">{user.role}</span>
-                        <span className="text-slate-400">{new Date(user.createdAt).toLocaleString()}</span>
+                    <div key={user.id} className="flex items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm">
+                        <span className="text-foreground">{user.email}</span>
+                        <span className="capitalize text-muted-foreground">{user.role}</span>
+                        <span className="text-muted-foreground">{new Date(user.createdAt).toLocaleString()}</span>
                     </div>
                 ))}
             </div>

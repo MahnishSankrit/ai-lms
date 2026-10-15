@@ -4,11 +4,13 @@ import Providers from "./provider";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
+import RouteTitle from "@/components/route-title";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
+// No `title` here on purpose: every page's tab title comes from the
+// <RouteTitle /> component below (one list for the whole app).
 export const metadata: Metadata = {
-  title: "AI LMS",
   description: "A simple full stack AI learning management system.",
 };
 
@@ -20,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("h-full", "font-sans", geist.variable)} suppressHydrationWarning>
       <body className="min-h-full flex flex-col">
+        <RouteTitle />
         <Providers>{children}</Providers>
         <Toaster />
       </body>

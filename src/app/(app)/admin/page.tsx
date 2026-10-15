@@ -5,7 +5,10 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { GraduationCap, Presentation, ShieldCheck, Users } from "lucide-react";
+
+import { Skeleton } from "@/components/ui/skeleton";
+import StatCard from "@/components/stat-card";
 
 type User = {
     id: string;
@@ -49,31 +52,20 @@ export default function AdminHomePage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-slate-900">Admin Overview</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Admin Overview</h1>
 
             {loading ? (
-                <p className="mt-4 text-sm text-slate-500">Loading overview...</p>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} className="h-24 rounded-xl" />
+                    ))}
+                </div>
             ) : (
                 <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <Link href="/admin/users" className="rounded-md border border-slate-200 bg-white p-5 hover:border-blue-400">
-                        <p className="text-sm text-slate-500">Total users</p>
-                        <p className="mt-1 text-3xl font-bold text-slate-900">{totalUsers}</p>
-                    </Link>
-
-                    <div className="rounded-md border border-slate-200 bg-white p-5">
-                        <p className="text-sm text-slate-500">Students</p>
-                        <p className="mt-1 text-3xl font-bold text-slate-900">{studentCount}</p>
-                    </div>
-
-                    <div className="rounded-md border border-slate-200 bg-white p-5">
-                        <p className="text-sm text-slate-500">Teachers</p>
-                        <p className="mt-1 text-3xl font-bold text-slate-900">{teacherCount}</p>
-                    </div>
-
-                    <div className="rounded-md border border-slate-200 bg-white p-5">
-                        <p className="text-sm text-slate-500">Admins</p>
-                        <p className="mt-1 text-3xl font-bold text-slate-900">{adminCount}</p>
-                    </div>
+                    <StatCard href="/admin/users" label="Total users" value={totalUsers} icon={Users} />
+                    <StatCard href="/admin/users" label="Students" value={studentCount} icon={GraduationCap} />
+                    <StatCard href="/admin/users" label="Teachers" value={teacherCount} icon={Presentation} />
+                    <StatCard href="/admin/users" label="Admins" value={adminCount} icon={ShieldCheck} />
                 </div>
             )}
         </div>

@@ -117,8 +117,12 @@ export default function DashboardNav({
             </Sidebar>
 
             <SidebarInset>
-                <DashboardTopbar email={email} role={role} />
+                <DashboardTopbar email={email} />
                 <div className="flex-1 p-6">{children}</div>
+                <footer className="flex flex-wrap items-center justify-between gap-2 border-t px-6 py-3 text-xs text-muted-foreground">
+                    <span>© {new Date().getFullYear()} AI LMS</span>
+                    <span>v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
+                </footer>
             </SidebarInset>
         </SidebarProvider>
     );
