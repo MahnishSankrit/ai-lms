@@ -1,15 +1,19 @@
-// Shows one classroom's details, its exams, and a way to leave it.
+// One classroom, from the student's point of view:
+// teacher + classmates count, announcements, upcoming exams, past exams,
+// and a button to leave the classroom.
+// Everything comes from one API call: /api/classrooms/details/[id]
 
 "use client"
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { FileText, LogOut } from "lucide-react";
+import { CalendarClock, History, LogOut, Megaphone, UserRound, Users } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     AlertDialog,
@@ -24,23 +28,54 @@ import {
 } from "@/components/ui/alert-dialog";
 import EmptyState from "@/components/empty-state";
 import ErrorState from "@/components/error-state";
+import RelativeDate from "@/components/relative-date";
 
-type ClassroomDetails = {
+type Announcement = {
     id: string;
-    name: string;
-    subject: string;
-    description: string | null;
-    memberCount: number;
-    teacher: { id: string; email: string };
+    title: string;
+    content: string;
+    createdAt: string;
 };
 
 type Exam = {
     id: string;
     title: string;
+    status: string;
     durationMinutes: number;
     totalMarks: number;
-    classroom: { id: string; name: string };
+    startsAt: string | null;
+    endsAt: string | null;
 };
+
+type MyAttempt = {
+    id: string;
+    examId: string;
+    status: string;
+    score: number | null;
+};
+
+type ClassroomDetails = {
+    id: string;
+    name: string;
+    subject: string | null;
+    description: string | null;
+    memberCount: number;
+    teacherName: string;
+    announcements: Announcement[];
+    exams: Exam[];
+    myAttempts: MyAttempt[];
+};
+
+// An exam is "past" if the teacher completed it or its end time has passed.
+function isPastExam(exam: Exam) {
+    if (exam.status === "completed") {
+        return true;
+    }
+    if (exam.endsAt && new Date(exam.endsAt) < new Date()) {
+        return true;
+    }
+    return false;
+}
 
 export default function ClassroomDetailsPage() {
     const params = useParams();
@@ -48,7 +83,6 @@ export default function ClassroomDetailsPage() {
     const classroomId = params.id as string;
 
     const [classroom, setClassroom] = useState<ClassroomDetails | null>(null);
-    const [exams, setExams] = useState<Exam[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [leaving, setLeaving] = useState(false);
@@ -58,27 +92,15 @@ export default function ClassroomDetailsPage() {
         setError("");
 
         try {
-            const classroomResponse = await fetch(`/api/classrooms/details/${classroomId}`);
-            const classroomData = await classroomResponse.json();
+            const response = await fetch(`/api/classrooms/details/${classroomId}`);
+            const data = await response.json();
 
-            if (!classroomResponse.ok) {
-                setError(classroomData.error || "Failed to load classroom");
+            if (!response.ok) {
+                setError(data.error || "Failed to load classroom");
                 return;
             }
 
-            setClassroom(classroomData.classroom);
-
-            // The exams API just returns every exam this student can see,
-            // so we keep only the ones that belong to this classroom.
-            const examsResponse = await fetch("/api/exams/get-exams");
-            const examsData = await examsResponse.json();
-
-            if (examsResponse.ok) {
-                const classroomExams = examsData.exams.filter(
-                    (exam: Exam) => exam.classroom.id === classroomId
-                );
-                setExams(classroomExams);
-            }
+            setClassroom(data.classroom);
         } catch (err) {
             console.error("Error loading classroom:", err);
             setError("Something went wrong. Please try again.");
@@ -123,7 +145,11 @@ export default function ClassroomDetailsPage() {
         return (
             <div className="flex flex-col gap-4">
                 <Skeleton className="h-8 w-64" />
-                <Skeleton className="h-32 w-full rounded-xl" />
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <Skeleton className="h-20 rounded-xl" />
+                    <Skeleton className="h-20 rounded-xl" />
+                </div>
+                <Skeleton className="h-40 w-full rounded-xl" />
             </div>
         );
     }
@@ -136,12 +162,35 @@ export default function ClassroomDetailsPage() {
         return null;
     }
 
+    // Split the exams into upcoming and past.
+    const upcomingExams: Exam[] = [];
+    const pastExams: Exam[] = [];
+    for (const exam of classroom.exams) {
+        if (isPastExam(exam)) {
+            pastExams.push(exam);
+        } else {
+            upcomingExams.push(exam);
+        }
+    }
+
+    // Finds this student's attempt for an exam (or undefined if they never started it).
+    const findMyAttempt = (examId: string) => {
+        return classroom.myAttempts.find((attempt) => attempt.examId === examId);
+    };
+
+    // Everyone in the class except me.
+    const classmates = Math.max(classroom.memberCount - 1, 0);
+
     return (
         <div>
+            {/* Header + leave button */}
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">{classroom.name}</h1>
-                    <p className="mt-1 text-sm text-muted-foreground">{classroom.subject}</p>
+                    {classroom.subject && <p className="mt-1 text-sm text-muted-foreground">{classroom.subject}</p>}
+                    {classroom.description && (
+                        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{classroom.description}</p>
+                    )}
                 </div>
 
                 <AlertDialog>
@@ -152,7 +201,7 @@ export default function ClassroomDetailsPage() {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Leave {classroom.name}?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                You&apos;ll lose access to its exams and materials. You can rejoin later with the
+                                You&apos;ll lose access to its exams. You can rejoin later with the
                                 classroom&apos;s join code.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
@@ -166,36 +215,137 @@ export default function ClassroomDetailsPage() {
                 </AlertDialog>
             </div>
 
-            {classroom.description && (
-                <p className="mt-3 text-sm text-muted-foreground">{classroom.description}</p>
-            )}
-            <p className="mt-2 text-xs text-muted-foreground">
-                Teacher: {classroom.teacher.email} · {classroom.memberCount} student(s)
-            </p>
+            {/* Teacher + classmates */}
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <Card>
+                    <CardContent className="flex items-center gap-3">
+                        <UserRound className="size-8 text-primary/60" />
+                        <div>
+                            <p className="text-sm text-muted-foreground">Teacher</p>
+                            <p className="font-semibold">{classroom.teacherName}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="flex items-center gap-3">
+                        <Users className="size-8 text-primary/60" />
+                        <div>
+                            <p className="text-sm text-muted-foreground">Classmates</p>
+                            <p className="font-semibold">{classmates}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
-            <h2 className="mt-8 text-lg font-semibold">Exams</h2>
+            <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                {/* Announcements */}
+                <Card className="lg:row-span-2">
+                    <CardHeader>
+                        <CardTitle className="text-base">Announcements</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {classroom.announcements.length === 0 ? (
+                            <EmptyState icon={Megaphone} title="No announcements" description="Your teacher hasn't posted anything yet." />
+                        ) : (
+                            <ul className="flex flex-col gap-3">
+                                {classroom.announcements.map((announcement) => (
+                                    <li key={announcement.id} className="rounded-lg border p-3">
+                                        <p className="font-medium">{announcement.title}</p>
+                                        <p className="mt-1 text-sm whitespace-pre-line text-muted-foreground">
+                                            {announcement.content}
+                                        </p>
+                                        <p className="mt-2 text-xs text-muted-foreground">
+                                            <RelativeDate date={announcement.createdAt} />
+                                        </p>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </CardContent>
+                </Card>
 
-            {exams.length === 0 && (
-                <EmptyState
-                    icon={FileText}
-                    title="No exams yet"
-                    description="Your teacher hasn't published any exams in this classroom."
-                />
-            )}
+                {/* Upcoming exams */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base">Upcoming exams</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {upcomingExams.length === 0 ? (
+                            <EmptyState icon={CalendarClock} title="No upcoming exams" description="New exams will show up here." />
+                        ) : (
+                            <ul className="flex flex-col gap-2">
+                                {upcomingExams.map((exam) => {
+                                    const myAttempt = findMyAttempt(exam.id);
+                                    return (
+                                        <li key={exam.id}>
+                                            <Link
+                                                href={`/student/exams/${exam.id}`}
+                                                className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm hover:bg-muted/50"
+                                            >
+                                                <div>
+                                                    <p className="font-medium">{exam.title}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {exam.durationMinutes} min · {exam.totalMarks} marks
+                                                        {exam.startsAt && (
+                                                            <>
+                                                                {" · starts "}
+                                                                <RelativeDate date={exam.startsAt} />
+                                                            </>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                                {myAttempt && myAttempt.status === "in_progress" && (
+                                                    <Badge variant="secondary">In progress</Badge>
+                                                )}
+                                                {myAttempt && myAttempt.status !== "in_progress" && <Badge>Done</Badge>}
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </CardContent>
+                </Card>
 
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                {exams.map((exam) => (
-                    <Link key={exam.id} href={`/student/exams/${exam.id}`} className="group/card-link rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-                        <Card className="h-full transition hover:bg-muted/50 hover:shadow-md hover:ring-primary/40 group-active/card-link:bg-muted">
-                            <CardContent>
-                                <p className="font-semibold">{exam.title}</p>
-                                <p className="text-sm text-muted-foreground">
-                                    {exam.durationMinutes} min · {exam.totalMarks} marks
-                                </p>
-                            </CardContent>
-                        </Card>
-                    </Link>
-                ))}
+                {/* Past exams */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base">Past exams</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {pastExams.length === 0 ? (
+                            <EmptyState icon={History} title="No past exams" description="Finished exams will show up here." />
+                        ) : (
+                            <ul className="flex flex-col gap-2">
+                                {pastExams.map((exam) => {
+                                    const myAttempt = findMyAttempt(exam.id);
+                                    return (
+                                        <li key={exam.id} className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm">
+                                            <div>
+                                                <p className="font-medium">{exam.title}</p>
+                                                {exam.endsAt && (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Ended <RelativeDate date={exam.endsAt} />
+                                                    </p>
+                                                )}
+                                            </div>
+                                            {myAttempt && myAttempt.status !== "in_progress" ? (
+                                                <Link
+                                                    href={`/student/exams/${exam.id}/results?attemptId=${myAttempt.id}`}
+                                                    className="text-xs font-medium text-primary hover:underline"
+                                                >
+                                                    View result
+                                                </Link>
+                                            ) : (
+                                                <Badge variant="outline">Missed</Badge>
+                                            )}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

@@ -20,6 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/error-state";
+import RelativeDate from "@/components/relative-date";
+import { formatIndianDateTime } from "@/lib/format-date";
 
 type Violation = {
     id: string;
@@ -27,14 +29,17 @@ type Violation = {
     details: string | null;
 };
 
-type AnsweredQuestion = {
-    id: string;
+// One row of the question-by-question review (built by /api/results/[id]).
+type ReviewItem = {
+    questionId: string;
+    questionText: string;
+    marks: number;
+    answered: boolean;
+    yourAnswer: string;
+    correctAnswer: string | null; // null until answers are revealed
+    explanation: string | null;
     isCorrect: boolean | null;
     marksAwarded: number | null;
-    question: {
-        questionText: string;
-        marks: number;
-    };
 };
 
 type ResultData = {
@@ -43,8 +48,9 @@ type ResultData = {
     totalMarks: number;
     percentage: number;
     pass: boolean;
+    submittedAt: string | null;
     violations: Violation[];
-    answers: AnsweredQuestion[];
+    review: ReviewItem[];
     answersRevealed: boolean;
     answersRevealAt: string | null;
 };
@@ -102,6 +108,11 @@ function ExamResultContent() {
     return (
         <div>
             <h1 className="text-2xl font-bold tracking-tight">{result.examTitle}</h1>
+            {result.submittedAt && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Submitted <RelativeDate date={result.submittedAt} />
+                </p>
+            )}
 
             <div className="mt-4 flex flex-wrap gap-4">
                 <Card>
@@ -146,7 +157,7 @@ function ExamResultContent() {
                         <p className="mt-1 text-sm text-muted-foreground">
                             To keep the exam fair for everyone, the correct answers and explanations unlock
                             {result.answersRevealAt
-                                ? ` at ${new Date(result.answersRevealAt).toLocaleString()}`
+                                ? ` on ${formatIndianDateTime(result.answersRevealAt)}`
                                 : " after the exam window closes"}
                             .
                         </p>
@@ -154,20 +165,45 @@ function ExamResultContent() {
                 </div>
             ) : (
                 <div className="mt-4 flex flex-col gap-3">
-                    {result.answers.map((answer, index) => (
-                        <Card key={answer.id}>
+                    {result.review.map((item, index) => (
+                        <Card key={item.questionId}>
                             <CardContent>
-                                <p className="font-medium">
-                                    {index + 1}. {answer.question.questionText}
-                                </p>
-                                <div className="mt-2 flex items-center gap-2 text-sm">
-                                    {answer.isCorrect === true && <Badge>Correct</Badge>}
-                                    {answer.isCorrect === false && <Badge variant="destructive">Incorrect</Badge>}
-                                    {answer.isCorrect === null && <Badge variant="secondary">Not answered</Badge>}
-                                    <span className="text-muted-foreground">
-                                        {answer.marksAwarded ?? 0} / {answer.question.marks} marks
-                                    </span>
+                                <div className="flex items-start justify-between gap-3">
+                                    <p className="font-medium">
+                                        {index + 1}. {item.questionText}
+                                    </p>
+                                    {!item.answered && <Badge variant="secondary">Not answered</Badge>}
+                                    {item.answered && item.isCorrect === true && <Badge>Correct</Badge>}
+                                    {item.answered && item.isCorrect === false && <Badge variant="destructive">Incorrect</Badge>}
+                                    {item.answered && item.isCorrect === null && <Badge variant="outline">Needs grading</Badge>}
                                 </div>
+
+                                {/* Your answer vs. the correct answer, side by side */}
+                                <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                                    <div className="rounded-md border p-2">
+                                        <p className="text-xs text-muted-foreground">Your answer</p>
+                                        <p className={item.isCorrect === false ? "text-destructive" : ""}>
+                                            {item.answered ? item.yourAnswer : "—"}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-md border p-2">
+                                        <p className="text-xs text-muted-foreground">Correct answer</p>
+                                        <p className="text-green-700 dark:text-green-400">
+                                            {item.correctAnswer || "Checked by your teacher"}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {item.explanation && (
+                                    <p className="mt-3 rounded-md bg-muted p-2 text-sm">
+                                        <span className="font-medium">Explanation: </span>
+                                        {item.explanation}
+                                    </p>
+                                )}
+
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                    {item.marksAwarded ?? 0} / {item.marks} marks
+                                </p>
                             </CardContent>
                         </Card>
                     ))}

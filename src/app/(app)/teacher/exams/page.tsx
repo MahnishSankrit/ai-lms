@@ -4,6 +4,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import PageSkeleton from "@/components/page-skeleton";
 import Link from "next/link";
 
@@ -57,13 +58,17 @@ export default function TeacherExamsPage() {
 
             if (!response.ok) {
                 setActionMessage(data.error || "Could not publish exam");
+                toast.error(data.error || "Could not publish exam");
                 return;
             }
+
+            toast.success("Exam published");
 
             loadExams();
         } catch (err) {
             console.error("Error publishing exam:", err);
             setActionMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         }
     };
 
@@ -78,13 +83,17 @@ export default function TeacherExamsPage() {
 
             if (!response.ok) {
                 setActionMessage(data.error || "Could not start exam");
+                toast.error(data.error || "Could not start exam");
                 return;
             }
+
+            toast.success("Exam started");
 
             loadExams();
         } catch (err) {
             console.error("Error starting exam:", err);
             setActionMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         }
     };
 
@@ -103,13 +112,17 @@ export default function TeacherExamsPage() {
 
             if (!response.ok) {
                 setActionMessage(data.error || "Could not end exam");
+                toast.error(data.error || "Could not end exam");
                 return;
             }
+
+            toast.success("Exam ended");
 
             loadExams();
         } catch (err) {
             console.error("Error ending exam:", err);
             setActionMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         }
     };
 
@@ -121,11 +134,16 @@ export default function TeacherExamsPage() {
                 method: "DELETE",
             });
 
-            if (response.ok) {
-                loadExams();
+            if (!response.ok) {
+                toast.error("Could not delete exam");
+                return;
             }
+
+            toast.success("Exam deleted");
+            loadExams();
         } catch (err) {
             console.error("Error deleting exam:", err);
+            toast.error("Something went wrong. Please try again.");
         }
     };
 

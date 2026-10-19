@@ -6,7 +6,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Building2 } from "lucide-react";
+import { toast } from "sonner";
+import { Building2, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,7 @@ export default function StudentClassroomsPage() {
     const [loadError, setLoadError] = useState("");
 
     const [joinCode, setJoinCode] = useState("");
-    const [joinMessage, setJoinMessage] = useState("");
+    const [joinError, setJoinError] = useState("");
     const [joining, setJoining] = useState(false);
 
     const loadClassrooms = async () => {
@@ -59,29 +60,38 @@ export default function StudentClassroomsPage() {
 
     const handleJoin = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setJoinMessage("");
+        setJoinError("");
+
+        // Quick check before calling the server.
+        const code = joinCode.trim();
+        if (code === "") {
+            setJoinError("Please enter a join code.");
+            return;
+        }
+
         setJoining(true);
 
         try {
             const response = await fetch("/api/classrooms/join", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ joinCode }),
+                body: JSON.stringify({ joinCode: code }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                setJoinMessage(data.error || "Could not join classroom");
+                // e.g. "Invalid code..." or "You've already joined ..."
+                setJoinError(data.error || "Could not join classroom");
                 return;
             }
 
-            setJoinMessage("Joined classroom successfully!");
+            toast.success(data.message);
             setJoinCode("");
             loadClassrooms();
         } catch (error) {
             console.error("Error joining classroom:", error);
-            setJoinMessage("Something went wrong. Please try again.");
+            setJoinError("Something went wrong. Please try again.");
         } finally {
             setJoining(false);
         }
@@ -94,15 +104,17 @@ export default function StudentClassroomsPage() {
             <form onSubmit={handleJoin} className="mt-4 flex max-w-md gap-2">
                 <Input
                     placeholder="Enter join code (e.g. sq7tso)"
-                    required
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value)}
+                    aria-invalid={joinError !== ""}
+                    disabled={joining}
                 />
                 <Button type="submit" disabled={joining}>
+                    {joining && <Loader2 className="animate-spin" />}
                     {joining ? "Joining..." : "Join"}
                 </Button>
             </form>
-            {joinMessage && <p className="mt-2 text-sm text-muted-foreground">{joinMessage}</p>}
+            {joinError && <p className="mt-2 text-sm text-destructive">{joinError}</p>}
 
             <div className="mt-8">
                 {loading && (

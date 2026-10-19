@@ -98,12 +98,51 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
 
         const memberCount = classroom.members.length;
-        const subject = classroom.subject;
-        if(!subject){
-            return NextResponse.json(
-                { error: "Subject not found" },
-                { status: 404 }
-            )
+
+        // Latest announcements, newest first.
+        const announcements = await prisma.announcement.findMany({
+            where: { classroomId },
+            orderBy: { createdAt: "desc" },
+            take: 20,
+        });
+
+        // Exams students can see: published (open/upcoming) and completed (past).
+        // Drafts are hidden from students.
+        const exams = await prisma.exam.findMany({
+            where: {
+                classroomId,
+                status: { in: ["published", "completed"] },
+            },
+            orderBy: { startsAt: "asc" },
+            select: {
+                id: true,
+                title: true,
+                status: true,
+                durationMinutes: true,
+                totalMarks: true,
+                startsAt: true,
+                endsAt: true,
+            },
+        });
+
+        // For students: their own latest attempt on each exam, so the page
+        // can show "Completed" or a link to the result.
+        const myAttempts = await prisma.examAttempt.findMany({
+            where: {
+                studentId: session.user.id,
+                examId: { in: exams.map((exam) => exam.id) },
+            },
+            orderBy: { createdAt: "desc" },
+            select: { id: true, examId: true, status: true, score: true },
+        });
+
+        // Show the teacher's display name if they've set one, otherwise their email.
+        const teacherProfile = await prisma.userProfile.findUnique({
+            where: { userId: classroom.ownerId },
+        });
+        let teacherName = classroom.owner.email;
+        if (teacherProfile && teacherProfile.displayName) {
+            teacherName = teacherProfile.displayName;
         }
 
         return NextResponse.json(
@@ -116,6 +155,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                     joinCode: classroom.joinCode,
                     memberCount: memberCount,
                     teacher: classroom.owner,
+                    teacherName: teacherName,
+                    announcements: announcements,
+                    exams: exams,
+                    myAttempts: myAttempts,
                 }
              },
              {

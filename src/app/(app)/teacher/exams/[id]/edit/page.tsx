@@ -9,6 +9,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import PageSkeleton from "@/components/page-skeleton";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -162,14 +163,18 @@ export default function EditExamPage() {
 
             if (!response.ok) {
                 setMessage(data.error || "Could not save changes");
+                toast.error(data.error || "Could not save changes");
                 return;
             }
+
+            toast.success("Exam saved");
 
             setMessage("Saved!");
             loadExam();
         } catch (err) {
             console.error("Error saving exam:", err);
             setMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         } finally {
             setSaving(false);
         }
@@ -186,13 +191,17 @@ export default function EditExamPage() {
 
             if (!response.ok) {
                 setMessage(data.error || "Could not publish exam");
+                toast.error(data.error || "Could not publish exam");
                 return;
             }
+
+            toast.success("Exam published");
 
             loadExam();
         } catch (err) {
             console.error("Error publishing exam:", err);
             setMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         }
     };
 
@@ -207,13 +216,17 @@ export default function EditExamPage() {
 
             if (!response.ok) {
                 setMessage(data.error || "Could not start exam");
+                toast.error(data.error || "Could not start exam");
                 return;
             }
+
+            toast.success("Exam started");
 
             loadExam();
         } catch (err) {
             console.error("Error starting exam:", err);
             setMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         }
     };
 
@@ -232,18 +245,23 @@ export default function EditExamPage() {
 
             if (!response.ok) {
                 setMessage(data.error || "Could not end exam");
+                toast.error(data.error || "Could not end exam");
                 return;
             }
+
+            toast.success("Exam ended");
 
             loadExam();
         } catch (err) {
             console.error("Error ending exam:", err);
             setMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         }
     };
 
     const handleCopy = (text: string, label: string) => {
         navigator.clipboard.writeText(text);
+        toast.success(`${label} copied to clipboard`);
         setMessage(`${label} copied to clipboard.`);
     };
 
@@ -260,13 +278,17 @@ export default function EditExamPage() {
 
             if (!response.ok) {
                 setMessage(data.error || "Could not regenerate code");
+                toast.error(data.error || "Could not regenerate code");
                 return;
             }
+
+            toast.success("New exam code generated");
 
             loadExam();
         } catch (err) {
             console.error("Error regenerating exam code:", err);
             setMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         }
     };
 
@@ -278,11 +300,16 @@ export default function EditExamPage() {
                 body: JSON.stringify({ examId, quesId: questionId }),
             });
 
-            if (response.ok) {
-                loadExam();
+            if (!response.ok) {
+                toast.error("Could not add question");
+                return;
             }
+
+            toast.success("Question added to exam");
+            loadExam();
         } catch (err) {
             console.error("Error adding question:", err);
+            toast.error("Something went wrong. Please try again.");
         }
     };
 
@@ -294,9 +321,13 @@ export default function EditExamPage() {
                 body: JSON.stringify({ examQuestionId }),
             });
 
-            if (response.ok) {
-                loadExam();
+            if (!response.ok) {
+                toast.error("Could not remove question");
+                return;
             }
+
+            toast.success("Question removed from exam");
+            loadExam();
         } catch (err) {
             console.error("Error removing question:", err);
         }

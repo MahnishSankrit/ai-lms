@@ -11,13 +11,28 @@
 //    (so refreshing the page doesn't lose progress).
 // 6. Watches for the student switching tabs (a basic anti-cheat check).
 //    Too many tab switches force-submits the exam.
-// 7. Lets the student submit manually with a "Submit exam" button.
+// 7. Lets the student submit manually with a "Submit exam" button, which
+//    first opens a confirm dialog listing any unanswered questions.
+// Toasts tell the student when the exam starts, each answer saves,
+// and when it's submitted (by them, the timer, or too many violations).
 
 "use client"
 
 import { useEffect, useState } from "react";
 import PageSkeleton from "@/components/page-skeleton";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Option = {
     id: string;
@@ -130,7 +145,7 @@ export default function TakeExamPage() {
             setRemainingSeconds((seconds) => {
                 if (seconds <= 1) {
                     clearInterval(timer);
-                    handleSubmit();
+                    handleSubmit(true); // true = submitted because time ran out
                     return 0;
                 }
                 return seconds - 1;
@@ -205,6 +220,7 @@ export default function TakeExamPage() {
             setAttemptId(data.attemptId);
             setRemainingSeconds((exam?.duration ?? 0) * 60);
             setStatus("ready");
+            toast.success("Exam started. Good luck!");
         } catch (err) {
             console.error("Error starting exam:", err);
             setCodeError("Something went wrong. Please try again.");
@@ -237,10 +253,17 @@ export default function TakeExamPage() {
 
             if (!response.ok) {
                 setSaveError("Your last answer wasn't saved. Please try again.");
+                toast.error("Answer not saved");
+                return;
             }
+
+            // Same id every time, so a new "saved" toast replaces the old
+            // one instead of stacking up a pile of toasts.
+            toast.success("Answer saved", { id: "answer-saved", duration: 1500 });
         } catch (err) {
             console.error("Error saving answer:", err);
             setSaveError("Your last answer wasn't saved. Please try again.");
+            toast.error("Answer not saved");
         }
     };
 
@@ -248,7 +271,8 @@ export default function TakeExamPage() {
         router.push(`/student/exams/${examId}/results?attemptId=${attemptId}`);
     };
 
-    const handleSubmit = async () => {
+    // timeRanOut = true when the timer submits it, false when the student clicks Submit.
+    const handleSubmit = async (timeRanOut = false) => {
         setSubmitting(true);
         try {
             const response = await fetch("/api/attempts/submit", {
@@ -257,11 +281,20 @@ export default function TakeExamPage() {
                 body: JSON.stringify({ attemptId }),
             });
 
-            if (response.ok) {
-                goToResults();
+            if (!response.ok) {
+                toast.error("Could not submit the exam. Please try again.");
+                return;
             }
+
+            if (timeRanOut) {
+                toast.info("Time's up! Your exam was submitted automatically.");
+            } else {
+                toast.success("Exam submitted");
+            }
+            goToResults();
         } catch (err) {
             console.error("Error submitting exam:", err);
+            toast.error("Something went wrong. Please try again.");
         } finally {
             setSubmitting(false);
         }
@@ -279,7 +312,10 @@ export default function TakeExamPage() {
             const data = await response.json();
 
             if (response.ok && data.autoSubmitted) {
+                toast.error("Your exam was submitted automatically because of too many violations.");
                 goToResults();
+            } else if (response.ok) {
+                toast.warning("Warning: this was recorded as an exam violation.");
             }
         } catch (err) {
             console.error("Error logging violation:", err);
@@ -352,6 +388,16 @@ export default function TakeExamPage() {
     const seconds = remainingSeconds % 60;
     const timeLabel = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
+    // For the submit dialog: which question numbers have no answer yet?
+    const unansweredNumbers: number[] = [];
+    exam.questions.forEach((question, index) => {
+        const answer = answers[question.id];
+        if (!answer || answer.trim() === "") {
+            unansweredNumbers.push(index + 1); // show 1-based numbers like the page does
+        }
+    });
+    const answeredCount = exam.questions.length - unansweredNumbers.length;
+
     return (
         <div>
             <div className="flex items-center justify-between">
@@ -410,17 +456,41 @@ export default function TakeExamPage() {
                 ))}
             </div>
 
-            <button
-                onClick={() => {
-                    if (confirm("Submit the exam? You cannot change your answers after this.")) {
-                        handleSubmit();
+            {/* Submit button opens a confirm dialog with a summary first */}
+            <AlertDialog>
+                <AlertDialogTrigger
+                    render={
+                        <button
+                            disabled={submitting}
+                            className="mt-8 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
+                        />
                     }
-                }}
-                disabled={submitting}
-                className="mt-8 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
-            >
-                {submitting ? "Submitting..." : "Submit exam"}
-            </button>
+                >
+                    {submitting ? "Submitting..." : "Submit exam"}
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Submit the exam?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You answered {answeredCount} of {exam.questions.length} questions. You can&apos;t
+                            change your answers after submitting.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    {unansweredNumbers.length > 0 && (
+                        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                            Unanswered: question {unansweredNumbers.join(", ")}
+                        </p>
+                    )}
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Keep working</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleSubmit()} disabled={submitting}>
+                            Submit exam
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

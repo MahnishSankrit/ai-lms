@@ -57,7 +57,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
                 answers: {
                     include: {
-                        question: true
+                        question: {
+                            include: { options: true },
+                        },
                     }
                 },
 
@@ -76,7 +78,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                 { status: 404 }
             );
         }
-        if (attempt.status !== "submitted") {
+        // Only finished attempts have a result. Auto-submitted ones are
+        // finished and graded too, so they count.
+        if (attempt.status === "in_progress") {
             return NextResponse.json(
                 { error: "Result is not available yet" },
                 { status: 400 }
@@ -150,9 +154,69 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                 question: {
                     ...answer.question,
                     explanation: null,
+                    options: [], // options contain isCorrect, so hide them too
                 },
             };
         });
+
+        // ------------------------------------------------------------
+        // Question-by-question review.
+        // We go through EVERY question in the exam (not just the ones the
+        // student answered), so unanswered questions show up too.
+        // ------------------------------------------------------------
+        const examQuestions = await prisma.examQuestion.findMany({
+            where: { examId: attempt.examId },
+            include: { question: { include: { options: true } } },
+            orderBy: { order: "asc" },
+        });
+
+        const review = [];
+        for (const examQuestion of examQuestions) {
+            const question = examQuestion.question;
+
+            // Find the student's answer to this question (may not exist).
+            let answer = null;
+            for (const a of attempt.answers) {
+                if (a.questionId === question.id) {
+                    answer = a;
+                }
+            }
+
+            // What the student answered, as readable text.
+            let yourAnswer = "";
+            if (answer && answer.answerText) {
+                yourAnswer = answer.answerText;
+            }
+            if (answer && answer.selectedOptionId) {
+                for (const option of question.options) {
+                    if (option.id === answer.selectedOptionId) {
+                        yourAnswer = option.optionText;
+                    }
+                }
+            }
+
+            // The correct option(s), joined with commas.
+            const correctOptions = [];
+            for (const option of question.options) {
+                if (option.isCorrect) {
+                    correctOptions.push(option.optionText);
+                }
+            }
+
+            review.push({
+                questionId: question.id,
+                questionText: question.questionText,
+                marks: question.marks,
+                answered: yourAnswer !== "",
+                yourAnswer: yourAnswer,
+                // Correctness, correct answer and explanation stay hidden
+                // until answersRevealed (see above).
+                correctAnswer: answersRevealed ? correctOptions.join(", ") : null,
+                explanation: answersRevealed ? question.explanation : null,
+                isCorrect: answersRevealed && answer ? answer.isCorrect : null,
+                marksAwarded: answersRevealed && answer ? answer.marksAwarded : null,
+            });
+        }
 
         const result = {
 
@@ -166,6 +230,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             submittedAt:attempt.submittedAt,
             violations:attempt.violations,
             answers,
+            review,
             answersRevealed,
             answersRevealAt: oneHourAfterEnd,
         };

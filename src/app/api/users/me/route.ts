@@ -53,7 +53,17 @@ export async function GET(req: Request) {
               role: true,
               isVerified: true,
               createdAt: true,
-              updatedAt: true,  
+              updatedAt: true,
+              // Personal details saved at sign-up (null for older accounts)
+              profile: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  username: true,
+                  studentId: true,
+                  phone: true,
+                },
+              },
             }
         })
         if(!user){

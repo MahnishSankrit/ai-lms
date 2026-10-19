@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { AttemptStatus } from "@prisma/client";
+import { getAutoSubmitReason } from "@/lib/attempt-reason";
 
 
 /**
@@ -81,12 +83,18 @@ export async function GET(req: Request) {
             (page - 1) * limit;
 
 
+        // Auto-submitted attempts (time ran out, violation, teacher ended
+        // the exam) are real graded results too, so they're included --
+        // otherwise a 2/15 violation attempt would silently vanish and
+        // inflate the student's average.
+        const finishedStatuses: AttemptStatus[] = ["submitted", "auto_submitted"];
+
         const attempts =
             await prisma.examAttempt.findMany({
 
                 where: {
                     studentId,
-                    status: "submitted"
+                    status: { in: finishedStatuses }
                 },
 
                 skip,
@@ -98,8 +106,14 @@ export async function GET(req: Request) {
                 },
 
                 include: {
-                    exam: true,
-                    violations: true
+                    exam: {
+                        include: {
+                            classroom: { select: { id: true, name: true } },
+                        },
+                    },
+                    violations: {
+                        orderBy: { createdAt: "asc" },
+                    },
                 }
 
             });
@@ -114,7 +128,7 @@ export async function GET(req: Request) {
         const totalAttempts = await prisma.examAttempt.count({
             where: {
                 studentId,
-                status: "submitted",
+                status: { in: finishedStatuses },
             },
         });
         const results = {
@@ -122,6 +136,9 @@ export async function GET(req: Request) {
                 id: attempt.id,
                 examId: attempt.examId,
                 examTitle: attempt.exam.title,
+                classroomId: attempt.exam.classroom.id,
+                classroomName: attempt.exam.classroom.name,
+                submittedAt: attempt.submittedAt,
                 score: attempt.score,
                 totalMarks: attempt.exam.totalMarks,
                 status: attempt.status,
@@ -136,7 +153,8 @@ export async function GET(req: Request) {
                         :
                         0,
                 pass: attempt.exam.passingMarks ? attempt.score! >= attempt.exam.passingMarks : true,
-                violations: attempt.violations
+                violations: attempt.violations,
+                autoSubmitReason: getAutoSubmitReason(attempt),
             }))
         }
 

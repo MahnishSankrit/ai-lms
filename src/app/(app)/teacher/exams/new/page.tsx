@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import PageSkeleton from "@/components/page-skeleton";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 type Classroom = {
     id: string;
@@ -84,13 +85,16 @@ export default function NewExamPage() {
 
             if (!response.ok) {
                 setError(data.error || "Could not create exam");
+                toast.error(data.error || "Could not create exam");
                 return;
             }
 
+            toast.success("Exam created as a draft");
             router.push(`/teacher/exams/${data.exam.id}/edit`);
         } catch (err) {
             console.error("Error creating exam:", err);
             setError("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         } finally {
             setCreating(false);
         }

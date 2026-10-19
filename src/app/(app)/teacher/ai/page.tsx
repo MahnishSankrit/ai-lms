@@ -7,6 +7,7 @@
 "use client"
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Loader2, Sparkles, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ export default function AiGeneratorPage() {
 
             if (!response.ok) {
                 setMessage(data.error || "Could not extract text from that PDF");
+                toast.error(data.error || "Could not extract text from that PDF");
                 return;
             }
 
@@ -67,6 +69,7 @@ export default function AiGeneratorPage() {
         } catch (error) {
             console.error("Error extracting PDF:", error);
             setMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         } finally {
             setExtracting(false);
         }
@@ -86,6 +89,7 @@ export default function AiGeneratorPage() {
 
             if (!response.ok) {
                 setMessage(data.error || "Could not generate questions");
+                toast.error(data.error || "Could not generate questions");
                 return;
             }
 
@@ -94,6 +98,7 @@ export default function AiGeneratorPage() {
         } catch (error) {
             console.error("Error generating questions:", error);
             setMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         } finally {
             setGenerating(false);
         }
@@ -119,8 +124,11 @@ export default function AiGeneratorPage() {
 
             if (!response.ok) {
                 setMessage(data.error || "Could not save questions");
+                toast.error(data.error || "Could not save questions");
                 return;
             }
+
+            toast.success(`Saved ${data.totalQuestions} question(s) to your question bank`);
 
             setMessage(`Saved ${data.totalQuestions} question(s) to your question bank.`);
             setQuestions([]);
@@ -128,6 +136,7 @@ export default function AiGeneratorPage() {
         } catch (error) {
             console.error("Error saving questions:", error);
             setMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         } finally {
             setSaving(false);
         }

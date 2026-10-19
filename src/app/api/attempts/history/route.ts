@@ -48,6 +48,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getAutoSubmitReason } from "@/lib/attempt-reason";
 
 /**
  * @swagger
@@ -143,7 +144,16 @@ export async function GET(req: Request) {
                 },
 
                 include: {
-                    exam: true,
+                    // classroom is used by the "filter by classroom" dropdown
+                    exam: {
+                        include: {
+                            classroom: { select: { id: true, name: true } },
+                        },
+                    },
+                    // Needed to explain auto-submitted attempts (see lib/attempt-reason.ts)
+                    violations: {
+                        orderBy: { createdAt: "asc" },
+                    },
                 },
 
                 orderBy: {
@@ -181,7 +191,10 @@ export async function GET(req: Request) {
                     totalAttempts / limit
                 ),
 
-                attempts,
+                attempts: attempts.map((attempt) => ({
+                    ...attempt,
+                    autoSubmitReason: getAutoSubmitReason(attempt),
+                })),
             },
             {
                 status: 200,

@@ -1,5 +1,5 @@
 // Top bar shown above every dashboard page, next to the sidebar.
-// Has: sidebar toggle, a search box (not wired to anything yet),
+// Has: sidebar toggle, the global search box (Ctrl+K),
 // a real notifications bell, the theme toggle, and an account menu.
 // (No role chip here -- the sidebar header already says which dashboard you're on.)
 
@@ -7,11 +7,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, LogOut, Search, Settings, User } from "lucide-react";
+import { Bell, LogOut, Settings, User } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
+import GlobalSearch from "@/components/global-search";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu,
@@ -65,14 +65,24 @@ export default function DashboardTopbar({ email }: { email: string }) {
         }
     };
 
+    const handleMarkOneRead = async (notificationId: string) => {
+        try {
+            await fetch("/api/notifications/mark-read", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ notificationId }),
+            });
+            loadNotifications(); // reload so the list and the red dot update
+        } catch (error) {
+            console.error("Error marking notification as read:", error);
+        }
+    };
+
     return (
         <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
             <SidebarTrigger />
 
-            <div className="relative hidden max-w-sm flex-1 md:block">
-                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Search..." className="pl-8" aria-label="Search" />
-            </div>
+            <GlobalSearch />
 
             <div className="ml-auto flex items-center gap-1">
                 <DropdownMenu onOpenChange={(open) => open && loadNotifications()}>
@@ -108,18 +118,28 @@ export default function DashboardTopbar({ email }: { email: string }) {
                         ) : (
                             <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
                                 {notifications.map((notification) => (
-                                    <div
+                                    // Clicking an unread notification marks just that one as read.
+                                    <button
+                                        type="button"
                                         key={notification.id}
-                                        className={`rounded-md px-2 py-1.5 text-sm ${
+                                        onClick={() => handleMarkOneRead(notification.id)}
+                                        className={`rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted ${
                                             notification.isRead ? "text-muted-foreground" : "bg-accent"
                                         }`}
                                     >
-                                        <p className="font-medium text-foreground">{notification.title}</p>
+                                        <p className="flex items-center gap-2 font-medium text-foreground">
+                                            {notification.title}
+                                            {!notification.isRead && (
+                                                <span className="rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
+                                                    New
+                                                </span>
+                                            )}
+                                        </p>
                                         <p className="text-xs">{notification.message}</p>
                                         <p className="mt-0.5 text-xs text-muted-foreground">
                                             {new Date(notification.createdAt).toLocaleString()}
                                         </p>
-                                    </div>
+                                    </button>
                                 ))}
                             </div>
                         )}

@@ -58,10 +58,11 @@ export async function POST(req: Request) {
         const body = await req.json();
         // Students only ever see the short joinCode (e.g. "sq7tso"), never the
         // classroom's real database id, so that's what we look up by here.
-        const joinCode = typeof body === "string" ? body : body.joinCode || body.classroomId || body.id;
+        // Remove spaces around the code ("  sq7tso " -> "sq7tso").
+        const joinCode = String(body.joinCode || "").trim();
         if (!joinCode) {
             return NextResponse.json(
-                { error: "Join code is required" },
+                { error: "Please enter a join code" },
                 { status: 400 }
             );
         }
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
         });
         if(!classroom){
             return NextResponse.json(
-                { error: "Classroom not found" },
+                { error: "Invalid code. Check it with your teacher and try again." },
                 { status: 404 }
             );
         }
@@ -88,7 +89,7 @@ export async function POST(req: Request) {
 
         if (isMember) {
             return NextResponse.json(
-                { error: "Already a member" },
+                { error: `You've already joined ${classroom.name}` },
                 { status: 400 }
             );
         }
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json(
-            { message: "Joined classroom successfully" },
+            { message: `Joined ${classroom.name}` },
             { status: 200 }
         );
 

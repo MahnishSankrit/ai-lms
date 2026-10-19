@@ -104,6 +104,20 @@ model UserProfile {
 
   displayName String
 
+  // Filled in on the register page. All optional (?) so that users who
+  // signed up before these fields existed don't break.
+  firstName String?
+
+  lastName String?
+
+  // Unique: two people can't pick the same username.
+  username String? @unique
+
+  phone String?
+
+  // The college/school roll number. Only students have one.
+  studentId String?
+
   avatarUrl String?
 
   bio String?

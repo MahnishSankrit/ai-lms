@@ -88,8 +88,11 @@ export default function TeacherClassroomsPage() {
 
             if (!response.ok) {
                 setCreateMessage(data.error || "Could not create classroom");
+                toast.error(data.error || "Could not create classroom");
                 return;
             }
+
+            toast.success(`Classroom created! Join code: ${data.classroom.joinCode}`);
 
             setCreateMessage(`Classroom created! Join code: ${data.classroom.joinCode}`);
             setName("");
@@ -99,6 +102,7 @@ export default function TeacherClassroomsPage() {
         } catch (err) {
             console.error("Error creating classroom:", err);
             setCreateMessage("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         } finally {
             setCreating(false);
         }
