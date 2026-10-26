@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { gradeAttempt } from "@/lib/grading";
+import { getRemainingSeconds } from "@/lib/attempt-time";
 
 /**
  * @swagger
@@ -38,9 +39,7 @@ import { gradeAttempt } from "@/lib/grading";
 export async function POST(req: Request) {
     try {
 
-        // ==========================================
-        // STEP 1: AUTHENTICATION
-        // ==========================================
+
 
         const session =
             await getServerSession(authOptions);
@@ -56,9 +55,6 @@ export async function POST(req: Request) {
             );
         }
 
-        // ==========================================
-        // STEP 2: STUDENT CHECK
-        // ==========================================
 
         if (
             session.user.role !== "student"
@@ -73,9 +69,7 @@ export async function POST(req: Request) {
             );
         }
 
-        // ==========================================
-        // STEP 3: GET EXAM ID
-        // ==========================================
+
 
         const body = await req.json();
 
@@ -92,9 +86,7 @@ export async function POST(req: Request) {
             );
         }
 
-        // ==========================================
-        // STEP 4: FIND EXAM
-        // ==========================================
+
 
         const exam =
             await prisma.exam.findUnique({
@@ -114,9 +106,6 @@ export async function POST(req: Request) {
             );
         }
 
-        // ==========================================
-        // STEP 5: FIND STUDENT'S ATTEMPT
-        // ==========================================
 
         const attempt =
             await prisma.examAttempt.findFirst({
@@ -143,9 +132,7 @@ export async function POST(req: Request) {
             );
         }
 
-        // ==========================================
-        // STEP 6: ATTEMPT MUST BE ACTIVE
-        // ==========================================
+
 
         if (
             attempt.status !==
@@ -162,39 +149,17 @@ export async function POST(req: Request) {
             );
         }
 
-        // ==========================================
-        // STEP 7: CALCULATE ELAPSED TIME
-        // ==========================================
+        //  CALCULATE ELAPSED TIME
 
-        const now = new Date();
+        // Deadline = min(startedAt + duration, exam endsAt) -- see lib/attempt-time.ts.
+        // Counted in seconds, so a refresh doesn't hand out up to 59 free seconds.
+        const remainingSeconds = getRemainingSeconds(attempt.startedAt, exam);
+        const remainingMinutes = Math.ceil(remainingSeconds / 60);
 
-        const elapsedMilliseconds =
-            now.getTime() -
-            attempt.startedAt.getTime();
+        //  AUTO SUBMIT IF TIME ENDED
 
-        const elapsedMinutes =
-            Math.floor(
-                elapsedMilliseconds /
-                1000 /
-                60
-            );
 
-        // ==========================================
-        // STEP 8: CALCULATE REMAINING TIME
-        // ==========================================
-
-        const remainingMinutes =
-            Math.max(
-                exam.durationMinutes -
-                elapsedMinutes,
-                0
-            );
-
-        // ==========================================
-        // STEP 9: AUTO SUBMIT IF TIME ENDED
-        // ==========================================
-
-        if (remainingMinutes <= 0) {
+        if (remainingSeconds <= 0) {
 
             // Same grading used by a normal submit -- otherwise an attempt
             // that times out (student closes the tab and never reopens it
@@ -231,9 +196,8 @@ export async function POST(req: Request) {
             );
         }
 
-        // ==========================================
-        // STEP 10: RETURN ATTEMPT STATE
-        // ==========================================
+        // RETURN ATTEMPT STATE
+
 
         return NextResponse.json(
             {
@@ -244,6 +208,8 @@ export async function POST(req: Request) {
                     attempt.id,
 
                 remainingMinutes,
+
+                remainingSeconds,
 
                 answers:
                     attempt.answers,

@@ -46,7 +46,7 @@ export const aiQuestionSchema = z.object({
   options: z
     .array(aiQuestionOptionSchema)
     .min(2)
-    .max(6),
+    .max(4),
 });
 
 

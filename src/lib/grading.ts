@@ -8,6 +8,20 @@ import { prisma } from "@/lib/prisma";
 // teacher force-submit, or an auto-submit after too many anti-cheat
 // violations -- so the grading logic only lives in one place.
 export async function gradeAttempt(attemptId: string): Promise<number> {
+    const attempt = await prisma.examAttempt.findUnique({
+        where: { id: attemptId },
+    });
+    if (!attempt) {
+        return 0;
+    }
+
+    // Only questions that are actually in this exam can earn marks
+    const examQuestions = await prisma.examQuestion.findMany({
+        where: { examId: attempt.examId },
+        select: { questionId: true },
+    });
+    const examQuestionIds = examQuestions.map((examQuestion) => examQuestion.questionId);
+
     const answers = await prisma.attemptAnswer.findMany({
         where: { attemptId },
     });
@@ -31,7 +45,17 @@ export async function gradeAttempt(attemptId: string): Promise<number> {
         });
         if (!question) continue;
 
-        const isCorrect = selectedOption.isCorrect;
+        // An answer only counts if the question is in this exam AND the
+        // picked option belongs to that same question. Otherwise someone
+        // could submit a known-correct option id from a different question.
+        let isCorrect = selectedOption.isCorrect;
+        if (!examQuestionIds.includes(answer.questionId)) {
+            isCorrect = false;
+        }
+        if (selectedOption.questionId !== answer.questionId) {
+            isCorrect = false;
+        }
+
         const marksAwarded = isCorrect ? question.marks : 0;
         finalScore += marksAwarded;
 

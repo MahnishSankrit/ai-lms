@@ -5,6 +5,8 @@ import { aiService } from "@/services/ai.service";
 import { generateQuestionSchema } from "@/validation/generate-question.schema";
 import { ZodError } from "zod";
 // import { constrainedMemory } from "process";
+import { consumeAiQuota, refundAiQuota, DAILY_AI_LIMIT } from "@/lib/ai-quota";
+
 
 /**
  * @swagger
@@ -33,6 +35,8 @@ import { ZodError } from "zod";
  *         description: Not logged in
  *       403:
  *         description: Not a teacher
+ *       429:
+ *         description: Daily AI quota reached
  *       500:
  *         description: Gemini call failed, or response wasn't valid/parsable JSON
  */
@@ -62,11 +66,35 @@ export async function POST(req: Request) {
 
         const { text, numberOfQuestions } = validatedBody;
 
-        // Generate AI Questions
-        const questions = await aiService.generateQuestions(
-            text,
-            numberOfQuestions
-        );
+        const userId = session.user.id;
+        if (!userId) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        // Check the daily quota (only after validation, so a bad request doesn't use up a try)
+        const allowed = await consumeAiQuota(userId);
+        if (!allowed) {
+            return NextResponse.json(
+                { error: `Daily limit reached (${DAILY_AI_LIMIT} per day). Try again tomorrow.` },
+                { status: 429 }
+            );
+        }
+
+        // Generate AI Questions (if Gemini fails, give the request back)
+        let questions;
+        try {
+            questions = await aiService.generateQuestions(
+                text,
+                numberOfQuestions
+            );
+        } catch (error) {
+            await refundAiQuota(userId);
+            throw error;   // the outer catch still returns the 500
+        }
+
 
         if (!questions || questions.length === 0) {
             return NextResponse.json(

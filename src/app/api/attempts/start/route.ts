@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getRemainingSeconds } from "@/lib/attempt-time";
 
 // import { createQuestionSchema } from "@/validation/question.schema";
 // import { ZodError } from "zod";
@@ -181,7 +182,12 @@ export async function POST(req: Request) {
             },
         });
         return NextResponse.json(
-            { message: "Exam attempt started", attemptId: newAttempt.id },
+            {
+                message: "Exam attempt started",
+                attemptId: newAttempt.id,
+                // capped by the exam's endsAt, so the page timer matches the server
+                remainingSeconds: getRemainingSeconds(newAttempt.startedAt, exam),
+            },
             { status: 200 }
         )
 

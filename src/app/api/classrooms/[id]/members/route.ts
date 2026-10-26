@@ -54,12 +54,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         const classroomId = (await params).id;
 
         const classroom = await prisma.classroom.findFirst({
-            
+
             where: {
                 id: classroomId,
                 ownerId: session.user.id,
             },
-            
+
             include: {
                 members: {
                     include: {
@@ -67,20 +67,28 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                             select: {
                                 id: true,
                                 email: true,
+                                profile: {
+                                    select: {
+                                        firstName: true,
+                                        lastName: true,
+                                        displayName: true,
+                                        studentId: true,
+                                    },
+                                },
                             },
                         },
                     },
                 },
             },
         });
-        
+
         if (!classroom) {
             return NextResponse.json(
                 { error: "Classroom not found" },
                 { status: 404 }
             )
         }
-        
+
         if (classroom.ownerId !== session.user.id) {
             return NextResponse.json(
                 { error: "Forbidden" },

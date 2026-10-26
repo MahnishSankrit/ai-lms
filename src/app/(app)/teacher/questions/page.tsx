@@ -55,7 +55,13 @@ type Question = {
     type: string;
     marks: number;
     difficulty: string | null;
+    bankName: string | null;
     options: { id: string; optionText: string; isCorrect: boolean }[];
+};
+
+type Bank = {
+    bankName: string | null;
+    count: number;
 };
 
 const EMPTY_OPTIONS: Option[] = [
@@ -79,6 +85,8 @@ export default function TeacherQuestionsPage() {
     const [search, setSearch] = useState("");
     const [typeFilter, setTypeFilter] = useState("all");
     const [difficultyFilter, setDifficultyFilter] = useState("all");
+    const [bankFilter, setBankFilter] = useState("all");
+    const [banks, setBanks] = useState<Bank[]>([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [exporting, setExporting] = useState(false);
@@ -90,6 +98,7 @@ export default function TeacherQuestionsPage() {
     const [type, setType] = useState("mcq");
     const [marks, setMarks] = useState(1);
     const [difficulty, setDifficulty] = useState("Medium");
+    const [bankName, setBankName] = useState("");
     const [options, setOptions] = useState<Option[]>(EMPTY_OPTIONS);
     const [saving, setSaving] = useState(false);
 
@@ -102,6 +111,7 @@ export default function TeacherQuestionsPage() {
             if (search) params.set("q", search);
             if (typeFilter !== "all") params.set("type", typeFilter);
             if (difficultyFilter !== "all") params.set("difficulty", difficultyFilter);
+            if (bankFilter !== "all") params.set("bank", bankFilter);
 
             const response = await fetch(`/api/questions/search?${params.toString()}`);
             const data = await response.json();
@@ -120,6 +130,23 @@ export default function TeacherQuestionsPage() {
             setLoading(false);
         }
     };
+
+    // List of bank names, for the filter dropdown and the name suggestions
+    const loadBanks = async () => {
+        try {
+            const response = await fetch("/api/questions/banks", { cache: "no-store" });
+            const data = await response.json();
+            if (response.ok) {
+                setBanks(data.banks);
+            }
+        } catch (err) {
+            console.error("Error loading question banks:", err);
+        }
+    };
+
+    useEffect(() => {
+        loadBanks();
+    }, []);
 
     // Refetch whenever the page changes immediately...
     useEffect(() => {
@@ -141,13 +168,14 @@ export default function TeacherQuestionsPage() {
 
         return () => clearTimeout(timeout);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search, typeFilter, difficultyFilter]);
+    }, [search, typeFilter, difficultyFilter, bankFilter]);
 
     const resetForm = () => {
         setQuestionText("");
         setMarks(1);
         setDifficulty("Medium");
         setOptions(EMPTY_OPTIONS);
+        // bankName is kept on purpose, so adding many questions to the same bank is quick
     };
 
     const openCreateDialog = () => {
@@ -162,6 +190,7 @@ export default function TeacherQuestionsPage() {
         setType(question.type);
         setMarks(question.marks);
         setDifficulty(question.difficulty || "Medium");
+        setBankName(question.bankName || "");
         setOptions(question.options.map((o) => ({ optionText: o.optionText, isCorrect: o.isCorrect })));
         setDialogOpen(true);
     };
@@ -199,7 +228,7 @@ export default function TeacherQuestionsPage() {
             const response = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ questionText, type, marks, difficulty, options }),
+                body: JSON.stringify({ questionText, type, marks, difficulty, bankName, options }),
             });
 
             const data = await response.json();
@@ -213,6 +242,7 @@ export default function TeacherQuestionsPage() {
             resetForm();
             setDialogOpen(false);
             loadQuestions();
+            loadBanks();
         } catch (err) {
             console.error("Error saving question:", err);
             toast.error("Something went wrong. Please try again.");
@@ -301,6 +331,19 @@ export default function TeacherQuestionsPage() {
                                     value={questionText}
                                     onChange={(e) => setQuestionText(e.target.value)}
                                 />
+
+                                {/* Type a new bank name, or pick an existing one from the suggestions */}
+                                <Input
+                                    placeholder="Question bank name (e.g. Core CS - Set 1)"
+                                    list="bank-name-options"
+                                    value={bankName}
+                                    onChange={(e) => setBankName(e.target.value)}
+                                />
+                                <datalist id="bank-name-options">
+                                    {banks.map((bank) =>
+                                        bank.bankName ? <option key={bank.bankName} value={bank.bankName} /> : null
+                                    )}
+                                </datalist>
 
                                 <div className="flex gap-3">
                                     <Select value={type} onValueChange={(value) => setType(value ?? "mcq")}>
@@ -406,6 +449,19 @@ export default function TeacherQuestionsPage() {
                         <SelectItem value="Hard">Hard</SelectItem>
                     </SelectContent>
                 </Select>
+                <Select value={bankFilter} onValueChange={(value) => setBankFilter(value ?? "all")}>
+                    <SelectTrigger className="w-56">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All banks</SelectItem>
+                        {banks.map((bank) => (
+                            <SelectItem key={bank.bankName ?? "__none__"} value={bank.bankName ?? "__none__"}>
+                                {bank.bankName ?? "Uncategorized"} ({bank.count})
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="mt-4">
@@ -425,6 +481,7 @@ export default function TeacherQuestionsPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Question</TableHead>
+                                <TableHead>Bank</TableHead>
                                 <TableHead>Type</TableHead>
                                 <TableHead>Difficulty</TableHead>
                                 <TableHead>Marks</TableHead>
@@ -435,6 +492,9 @@ export default function TeacherQuestionsPage() {
                             {questions.map((question) => (
                                 <TableRow key={question.id}>
                                     <TableCell className="max-w-md truncate">{question.questionText}</TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                        {question.bankName || "—"}
+                                    </TableCell>
                                     <TableCell>
                                         <Badge variant="outline" className="capitalize">
                                             {question.type.replace("_", " ")}

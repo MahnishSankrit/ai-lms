@@ -10,7 +10,7 @@ import { gradeAttempt } from "@/lib/grading";
  *   post:
  *     tags: [Attempts]
  *     summary: Force-submit an attempt (e.g. proctoring violation), optionally logging a Violation
- *     description: "No role or ownership check -- any authenticated user can force-submit any in-progress attempt."
+ *     description: "Only the student who owns the attempt, or the teacher who created the exam, can force-submit it."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -30,6 +30,8 @@ import { gradeAttempt } from "@/lib/grading";
  *         description: Missing attemptId, or attempt already submitted
  *       401:
  *         description: Not logged in
+ *       403:
+ *         description: Not the attempt's student or the exam's teacher
  *       404:
  *         description: Attempt not found
  *       500:
@@ -89,6 +91,9 @@ export async function POST(req: Request) {
                 where: {
                     id: attemptId,
                 },
+                include: {
+                    exam: true,
+                },
             });
 
         if (!attempt) {
@@ -99,6 +104,32 @@ export async function POST(req: Request) {
                 },
                 {
                     status: 404,
+                }
+            );
+        }
+
+        // ==========================================
+        // STEP 3b: WHO IS ALLOWED?
+        // Only the student who owns the attempt, or the
+        // teacher who created the exam. Anyone else could
+        // otherwise end another student's exam.
+        // ==========================================
+
+        let allowed = false;
+        if (session.user.role === "student" && attempt.studentId === session.user.id) {
+            allowed = true;
+        }
+        if (session.user.role === "teacher" && attempt.exam.createdById === session.user.id) {
+            allowed = true;
+        }
+
+        if (!allowed) {
+            return NextResponse.json(
+                {
+                    error: "Forbidden",
+                },
+                {
+                    status: 403,
                 }
             );
         }

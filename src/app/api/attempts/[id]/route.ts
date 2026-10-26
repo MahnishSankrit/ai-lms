@@ -52,7 +52,7 @@ import { prisma } from "@/lib/prisma";
  *       404:
  *         description: Attempt not found
  */
-export async function GET(req: Request,{ params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
 
 
@@ -133,11 +133,21 @@ export async function GET(req: Request,{ params }: { params: Promise<{ id: strin
                     }
                 );
             }
-        }
 
-        // STEP 6: TEACHER ACCESS
-
-        if (session.user.role === "teacher") {
+            // This response includes each option's isCorrect. If a student
+            // could fetch it mid-exam, they'd see the right answers and
+            // change theirs -- so it's only available after submitting.
+            if (attempt.status === "in_progress") {
+                return NextResponse.json(
+                    {
+                        error: "Results are available after you submit the exam",
+                    },
+                    {
+                        status: 403,
+                    }
+                );
+            }
+        } else if (session.user.role === "teacher") {
 
             if (
                 attempt.exam.createdById !==

@@ -41,6 +41,8 @@ export default function AiGeneratorPage() {
     const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
     const [included, setIncluded] = useState<boolean[]>([]);
 
+    // All saved questions go into this named question bank
+    const [bankName, setBankName] = useState("");
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -68,8 +70,8 @@ export default function AiGeneratorPage() {
             setText(data.text);
         } catch (error) {
             console.error("Error extracting PDF:", error);
-            setMessage("Something went wrong. Please try again.");
-            toast.error("Something went wrong. Please try again.");
+            setMessage("Something went wrong while extraxting the pdf. Please try again.");
+            toast.error("Something went wrong while extraxting the pdf. Please try again.");
         } finally {
             setExtracting(false);
         }
@@ -98,7 +100,7 @@ export default function AiGeneratorPage() {
         } catch (error) {
             console.error("Error generating questions:", error);
             setMessage("Something went wrong. Please try again.");
-            toast.error("Something went wrong. Please try again.");
+            toast.error("Something went wrong while generating the questions. Please try again.");
         } finally {
             setGenerating(false);
         }
@@ -112,7 +114,9 @@ export default function AiGeneratorPage() {
         setMessage("");
         setSaving(true);
 
-        const approvedQuestions = questions.filter((_, index) => included[index]);
+        const approvedQuestions = questions
+            .filter((_, index) => included[index])
+            .map((question) => ({ ...question, bankName: bankName.trim() }));
 
         try {
             const response = await fetch("/api/questions/bulk", {
@@ -244,9 +248,25 @@ export default function AiGeneratorPage() {
                             </div>
                         ))}
 
-                        <Button onClick={handleBulkSave} disabled={approvedCount === 0 || saving} className="self-start">
-                            {saving ? "Saving..." : `Save ${approvedCount} question(s) to bank`}
-                        </Button>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                            <div className="flex flex-1 flex-col gap-1">
+                                <Label htmlFor="bankName" className="text-sm">
+                                    Question bank name
+                                </Label>
+                                <Input
+                                    id="bankName"
+                                    placeholder="e.g. Core CS - Set 1"
+                                    value={bankName}
+                                    onChange={(e) => setBankName(e.target.value)}
+                                />
+                            </div>
+                            <Button
+                                onClick={handleBulkSave}
+                                disabled={approvedCount === 0 || bankName.trim() === "" || saving}
+                            >
+                                {saving ? "Saving..." : `Save ${approvedCount} question(s) to bank`}
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             )}

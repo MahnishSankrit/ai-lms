@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { gradeAttempt } from "@/lib/grading";
+import { isAttemptExpired } from "@/lib/attempt-time";
 
 
 // Student Clicks Submit
@@ -102,6 +103,9 @@ export async function POST(req: Request) {
             where: {
                 id: attemptId,
             },
+            include: {
+                exam: true,
+            },
         });
 
         if (!attempt) {
@@ -143,13 +147,21 @@ export async function POST(req: Request) {
         // STEP 10: UPDATE ATTEMPT
         // MARK AS SUBMITTED
         // STORE FINAL SCORE
+        // A submit after the deadline (+ grace) is recorded as
+        // auto_submitted: the student ran out of time. Late answers
+        // can't sneak in, because /attempts/save rejects them.
         // ==================================================
+        let finalStatus: "submitted" | "auto_submitted" = "submitted";
+        if (isAttemptExpired(attempt.startedAt, attempt.exam)) {
+            finalStatus = "auto_submitted";
+        }
+
         await prisma.examAttempt.update({
             where: {
                 id: attemptId,
             },
             data: {
-                status: "submitted",
+                status: finalStatus,
                 score: finalScore,
                 submittedAt: new Date(),
             },

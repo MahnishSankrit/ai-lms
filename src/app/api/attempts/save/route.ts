@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { gradeAttempt } from "@/lib/grading";
+import { isAttemptExpired } from "@/lib/attempt-time";
 
 
 
@@ -31,6 +33,8 @@ import { prisma } from "@/lib/prisma";
  *         description: Answers saved successfully
  *       401:
  *         description: Not logged in
+ *       400:
+ *         description: Missing fields, attempt already submitted, time expired (attempt gets auto-submitted), question not in this exam, or option not in this question
  *       403:
  *         description: Not a student, or attempt doesn't belong to you
  *       404:
@@ -58,10 +62,20 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { attemptId, selectedOptionId, answerText, questionId } = body;
 
+        if (!attemptId || !questionId) {
+            return NextResponse.json(
+                { error: "attemptId and questionId are required" },
+                { status: 400 }
+            )
+        }
+
         // get the exam attempt and verify ownership
         const examAttempt = await prisma.examAttempt.findUnique({
             where: {
                 id: attemptId,
+            },
+            include: {
+                exam: true,
             }
         })
 
@@ -77,6 +91,64 @@ export async function POST(req: Request) {
                 { error: "Forbidden, you are not the owner of this attempt" },
                 { status: 403 }
             )
+        }
+
+        // answers can't be changed once the attempt is submitted
+        if (examAttempt.status !== "in_progress") {
+            return NextResponse.json(
+                { error: "Attempt already submitted" },
+                { status: 400 }
+            )
+        }
+
+        // time is checked on the server, not just by the browser timer.
+        // If time is up, submit with the answers saved so far.
+        if (isAttemptExpired(examAttempt.startedAt, examAttempt.exam)) {
+            const finalScore = await gradeAttempt(attemptId);
+            await prisma.examAttempt.update({
+                where: { id: attemptId },
+                data: {
+                    status: "auto_submitted",
+                    score: finalScore,
+                    submittedAt: new Date(),
+                },
+            });
+            return NextResponse.json(
+                { error: "Exam time expired" },
+                { status: 400 }
+            )
+        }
+
+        // the question must be part of THIS exam
+        const examQuestion = await prisma.examQuestion.findFirst({
+            where: {
+                examId: examAttempt.examId,
+                questionId: questionId,
+            }
+        })
+        if (!examQuestion) {
+            return NextResponse.json(
+                { error: "Question is not part of this exam" },
+                { status: 400 }
+            )
+        }
+
+        // the picked option must belong to THIS question
+        // (otherwise a student could send a known-correct option id
+        // from another question as the answer to every question)
+        if (selectedOptionId) {
+            const option = await prisma.questionOption.findFirst({
+                where: {
+                    id: selectedOptionId,
+                    questionId: questionId,
+                }
+            })
+            if (!option) {
+                return NextResponse.json(
+                    { error: "Option does not belong to this question" },
+                    { status: 400 }
+                )
+            }
         }
 
         // upsert the answers for the attempt

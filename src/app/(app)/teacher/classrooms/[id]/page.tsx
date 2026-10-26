@@ -32,8 +32,28 @@ type ClassroomStats = {
 
 type Member = {
     id: string;
-    user: { id: string; email: string };
+    user: {
+        id: string;
+        email: string;
+        profile: {
+            firstName: string | null;
+            lastName: string | null;
+            displayName: string;
+            studentId: string | null;
+        } | null;
+    };
 };
+
+// Full name if we have it, else display name, else the email
+function memberName(member: Member) {
+    const profile = member.user.profile;
+    if (profile) {
+        const fullName = `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim();
+        if (fullName) return fullName;
+        if (profile.displayName) return profile.displayName;
+    }
+    return member.user.email;
+}
 
 type Exam = {
     id: string;
@@ -219,9 +239,15 @@ export default function TeacherClassroomDetailsPage() {
                     <ul className="mt-3 flex flex-col gap-2">
                         {members.map((member) => (
                             <li key={member.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                                {member.user.email}
+                                <div className="min-w-0">
+                                    <p className="truncate font-medium text-foreground">{memberName(member)}</p>
+                                    <p className="truncate text-xs text-muted-foreground">
+                                        {member.user.email}
+                                        {member.user.profile?.studentId ? ` · Roll no. ${member.user.profile.studentId}` : ""}
+                                    </p>
+                                </div>
                                 <button
-                                    onClick={() => handleRemoveMember(member.id, member.user.email)}
+                                    onClick={() => handleRemoveMember(member.id, memberName(member))}
                                     className="text-xs font-medium text-destructive hover:underline"
                                 >
                                     Remove

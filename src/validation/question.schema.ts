@@ -15,6 +15,9 @@ export const createQuestionSchema = z.object({
 
     difficulty: z.string().optional(),
 
+    // Which question bank this question belongs to
+    bankName: z.string().trim().max(100).optional(),
+
     explanation: z.string().optional(),
 
     imageUrl: z.string().optional(),

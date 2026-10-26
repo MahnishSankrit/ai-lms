@@ -104,7 +104,7 @@ export default function TakeExamPage() {
 
                 if (resumeResponse.ok) {
                     setAttemptId(resumeData.attemptId);
-                    setRemainingSeconds(resumeData.remainingMinutes * 60);
+                    setRemainingSeconds(resumeData.remainingSeconds);
 
                     const previousAnswers: Record<string, string> = {};
                     for (const answer of resumeData.answers) {
@@ -218,7 +218,8 @@ export default function TakeExamPage() {
             }
 
             setAttemptId(data.attemptId);
-            setRemainingSeconds((exam?.duration ?? 0) * 60);
+            // the server works out the time left (capped by the exam's end time)
+            setRemainingSeconds(data.remainingSeconds);
             setStatus("ready");
             toast.success("Exam started. Good luck!");
         } catch (err) {

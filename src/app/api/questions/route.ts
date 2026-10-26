@@ -115,6 +115,7 @@ export async function POST(req: Request){
                 type : validatedBody.type,
                 marks : validatedBody.marks,
                 difficulty : validatedBody.difficulty,
+                bankName : validatedBody.bankName || null,
                 createdById : teacher.id,
                 options : {
                     create : validatedBody.options,

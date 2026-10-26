@@ -94,6 +94,8 @@ model User {
 
   createdQuestions Question[]
 
+  aiUsages AiUsage[]
+
   @@map("users")
 }
 
@@ -130,6 +132,33 @@ model UserProfile {
 
   @@map("user_profiles")
 }
+
+//////////////////////////////////////////////////////
+// AI USAGE (daily quota)
+//////////////////////////////////////////////////////
+
+// One row per teacher per day. A new day means a new row,
+// so the quota resets on its own without any cron job.
+model AiUsage {
+  id String @id @default(uuid())
+
+  userId String
+
+  // Day in "YYYY-MM-DD" format
+  date String
+
+  count Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("ai_usages")
+}
+
 
 //////////////////////////////////////////////////////
 // AUTH SUPPORT
@@ -290,6 +319,11 @@ model Question {
   marks Int @default(1)
 
   difficulty String?
+
+  // Name of the question bank this question belongs to (e.g. "Core CS - Set 1").
+  // Lets the teacher pick questions bank-by-bank when creating an exam.
+  // Null = "Uncategorized" (questions created before this field existed).
+  bankName String?
 
   createdAt DateTime @default(now())
 

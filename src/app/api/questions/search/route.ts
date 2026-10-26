@@ -102,6 +102,14 @@ export async function GET(req: Request) {
             where.type = typeFilter as QuestionType;
         }
 
+        // "__none__" = questions that aren't in any named bank
+        const bankFilter = searchParams.get("bank");
+        if (bankFilter === "__none__") {
+            where.bankName = null;
+        } else if (bankFilter) {
+            where.bankName = bankFilter;
+        }
+
 
         const questions = await prisma.question.findMany({
             where,

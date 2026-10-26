@@ -132,6 +132,7 @@ export async function POST(req: Request) {
             type: ques.type,
             marks: ques.marks,
             difficulty: ques.difficulty,
+            bankName: ques.bankName || null,
         }));
 
         const optionRows = questions.flatMap((ques, index) =>

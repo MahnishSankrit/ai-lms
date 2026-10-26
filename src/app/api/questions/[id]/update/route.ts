@@ -141,6 +141,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
                     type: validatedBody.type,
                     marks: validatedBody.marks,
                     difficulty: validatedBody.difficulty,
+                    bankName: validatedBody.bankName || null,
                 },
             });
 
