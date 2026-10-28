@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { completeExpiredExams } from "@/lib/exam-status";
 // import { createExamSchema } from "@/validation/exam.schema";
 
 
@@ -29,6 +30,9 @@ import { prisma } from "@/lib/prisma";
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions);
+
+        // close exams whose end time has passed, so the status shown is current
+        await completeExpiredExams();
         if (!session) {
             return NextResponse.json(
                 { error: "Unauthorized" },
@@ -80,13 +84,21 @@ export async function GET(req: Request) {
                         }
                     }
                 },
-                include: {
-                    createdBy: {
-                        select: {
-                            id: true,
-                            email: true,
-                        }
-                    },
+                // Only what a student needs. Never send accessCode (that's
+                // the secret the teacher shares separately), passingMarks,
+                // negativeMarking, createdById or other teacher-only config.
+                select: {
+                    id: true,
+                    title: true,
+                    description: true,
+                    status: true,
+                    durationMinutes: true,
+                    totalMarks: true,
+                    startsAt: true,
+                    endsAt: true,
+                    fullscreenRequired: true,
+                    accessCode: true, // read here only to work out requiresAccessCode below
+                    createdAt: true,
                     classroom: {
                         select: {
                             id: true,
@@ -99,8 +111,13 @@ export async function GET(req: Request) {
                 }
             })
 
+            const studentExams = exams.map(({ accessCode, ...exam }) => ({
+                ...exam,
+                requiresAccessCode: Boolean(accessCode),
+            }));
+
             return NextResponse.json(
-                { exams },
+                { exams: studentExams },
                 { status: 200 }
             )
         }

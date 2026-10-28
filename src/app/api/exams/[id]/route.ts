@@ -2,6 +2,7 @@ import { NextResponse }from "next/server";
 import { getServerSession }from "next-auth";
 import { authOptions }from "@/lib/auth";
 import { prisma }from "@/lib/prisma";
+import { completeExpiredExams } from "@/lib/exam-status";
 import { seededShuffle } from "@/lib/shuffle";
 
 /**
@@ -19,7 +20,7 @@ import { seededShuffle } from "@/lib/shuffle";
  *         schema: { type: string }
  *     responses:
  *       200:
- *         description: Exam detail (shape differs by role)
+ *         description: "Exam detail (shape differs by role). For a student, questions is empty until they have an in-progress attempt (started via /api/attempts/start, which checks the access code)."
  *       401:
  *         description: Not logged in
  *       403:
@@ -36,6 +37,9 @@ export async function GET(
 
         const session =
             await getServerSession(authOptions);
+
+        // close exams whose end time has passed, so the status shown is current
+        await completeExpiredExams();
 
         if (!session) {
 
@@ -181,8 +185,22 @@ export async function GET(
                 );
             }
 
+            // ACCESS-CODE GATE
+            // Questions are only sent once the student has an in-progress
+            // attempt. The only way to get one is /api/attempts/start, which
+            // checks the access code on the server -- so calling this API
+            // directly can't skip the code anymore.
+            const activeAttempt =
+                await prisma.examAttempt.findFirst({
+                    where: {
+                        examId: exam.id,
+                        studentId: session.user.id,
+                        status: "in_progress",
+                    },
+                });
+
             // SANITIZE QUESTIONS
-            let sanitizedQuestions =
+            let sanitizedQuestions = !activeAttempt ? [] :
                 exam.questions.map(question => {
 
                     // Strip isCorrect -- students should never receive

@@ -86,10 +86,18 @@ export default function TeacherDashboardPage() {
                         fetch(`/api/exams/${exam.id}/results`).then((r) => (r.ok ? r.json() : null))
                     )
                 );
-                const scored = resultsSamples.filter((r) => r && r.statistic.totalAttempts > 0);
-                if (scored.length > 0) {
-                    const total = scored.reduce((sum, r) => sum + r.statistic.averageScore, 0);
-                    setAverageScore(total / scored.length);
+                // Exams have different totals (one out of 462, another out of 6),
+                // so average each exam's percentage, not its raw marks.
+                const percentages: number[] = [];
+                recentExams.forEach((exam, index) => {
+                    const result = resultsSamples[index];
+                    if (result && result.statistic.totalAttempts > 0 && exam.totalMarks > 0) {
+                        percentages.push((result.statistic.averageScore / exam.totalMarks) * 100);
+                    }
+                });
+                if (percentages.length > 0) {
+                    const total = percentages.reduce((sum, value) => sum + value, 0);
+                    setAverageScore(total / percentages.length);
                 }
 
                 // Same data, reshaped into percentage-per-exam points for the chart.
@@ -160,7 +168,7 @@ export default function TeacherDashboardPage() {
                     <StatCard
                         href="/teacher/results"
                         label="Avg. score"
-                        value={averageScore === null ? "—" : averageScore.toFixed(1)}
+                        value={averageScore === null ? "—" : `${averageScore.toFixed(1)}%`}
                         icon={BarChart3}
                     />
                 </div>

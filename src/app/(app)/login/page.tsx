@@ -42,16 +42,20 @@ export default function LoginPage() {
         try {
             const response = await signIn("credentials", { email, password, redirect: false });
             if (!response || response.error) {
-                setError(response?.error === "Email not verified"
-                    ? "Please verify your email before logging in."
-                    : "Invalid email or password");
+                if (response?.error === "Email not verified") {
+                    setError("Please verify your email before logging in.");
+                } else if (response?.error?.startsWith("Your account is")) {
+                    // suspended / inactive -- show the real reason
+                    setError(response.error);
+                } else {
+                    setError("Invalid email or password");
+                }
                 return;
             }
             const session = await getSession();
 
             // console.log("Sign in response:", response);
 
-            console.log("Session after login:", session);
 
             if (!session?.user) {
                 setError("Login succeeded, but session was not created.");

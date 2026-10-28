@@ -103,7 +103,10 @@ export default function DashboardNav({
                                     <SidebarMenuItem key={link.href}>
                                         <SidebarMenuButton
                                             isActive={pathname === link.href}
-                                            render={<Link href={link.href} />}
+                                            // prefetch off: every sidebar link prefetching at once on load
+                                            // sent a burst of requests that came back 503. loading.tsx
+                                            // covers the short wait when a link is actually clicked.
+                                            render={<Link href={link.href} prefetch={false} />}
                                         >
                                             <Icon />
                                             {link.label}

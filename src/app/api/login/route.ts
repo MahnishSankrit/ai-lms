@@ -100,6 +100,14 @@ export async function POST(req: Request): Promise<NextResponse> {
             )
         }
 
+        // Same rule as lib/auth.ts: suspended / inactive users can't log in
+        if (user.status !== "active") {
+            return NextResponse.json(
+                { error: "Your account is " + user.status + ". Contact the admin." },
+                { status: 403 }
+            )
+        }
+
         const sessionToken = await encode({
             token: {
                 sub: user.id,

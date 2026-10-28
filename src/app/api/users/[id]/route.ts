@@ -49,6 +49,21 @@ import { NextResponse } from "next/server";
  */
 export async function GET(req: Request,{ params }: { params: Promise<{ id: string }> }) {
     try {
+        // Was open to anyone, even logged out -- anyone could look up any
+        // user's email/role/status by id. Admin only now.
+        const session = await getServerSession(authOptions);
+        if (!session) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+        if (session.user.role !== "admin") {
+            return NextResponse.json(
+                { error: "Forbidden" },
+                { status: 403 }
+            );
+        }
 
         const { id } = await params;
 
@@ -120,6 +135,36 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
             );
         }
 
+        // Attempts, classrooms, exams, questions, uploads and announcements
+        // point at the user without a cascade, so Postgres refuses to delete
+        // a user who has any of them (that used to come back as a 500).
+        // Deleting them would also wipe grading history. So: a user with
+        // history is deactivated instead; a user with none is really deleted.
+        const [attempts, classrooms, exams, questions, uploads, announcements] = await Promise.all([
+            prisma.examAttempt.count({ where: { studentId: id } }),
+            prisma.classroom.count({ where: { ownerId: id } }),
+            prisma.exam.count({ where: { createdById: id } }),
+            prisma.question.count({ where: { createdById: id } }),
+            prisma.upload.count({ where: { uploadedById: id } }),
+            prisma.announcement.count({ where: { teacherId: id } }),
+        ]);
+        const hasHistory = attempts + classrooms + exams + questions + uploads + announcements > 0;
+
+        if (hasHistory) {
+            await prisma.user.update({
+                where: { id: id },
+                data: { status: "inactive" },
+            });
+
+            return NextResponse.json(
+                {
+                    message: "User has exam or classroom history, so they were deactivated instead of deleted. They can no longer log in.",
+                    deactivated: true,
+                },
+                { status: 200 }
+            );
+        }
+
         await prisma.user.delete({
             where: {
                 id: id,
@@ -127,7 +172,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         });
 
         return NextResponse.json(
-            { message: "User deleted successfully" },
+            { message: "User deleted successfully", deactivated: false },
             { status: 200 }
         );
 

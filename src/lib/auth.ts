@@ -58,6 +58,11 @@ export const authOptions: NextAuthOptions = {
                     throw new Error("Email not verified");
                 }
 
+                // Suspended / inactive (or deactivated by delete) users can't log in
+                if (user.status !== "active") {
+                    throw new Error("Your account is " + user.status + ". Contact the admin.");
+                }
+
                 const isPasswordCorrect = await verifyPassword(credentials.password, user.password);
 
                 if (!isPasswordCorrect) {

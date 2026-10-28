@@ -8,7 +8,7 @@
 
 "use client"
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { BookOpen, Download, Pencil, Plus, Sparkles, Trash2, Upload } from "lucide-react";
@@ -69,6 +69,21 @@ const EMPTY_OPTIONS: Option[] = [
     { optionText: "", isCorrect: false },
 ];
 
+const TYPE_FILTER_LABELS: Record<string, string> = {
+    all: "All types",
+    mcq: "Multiple choice",
+    multiple_select: "Multiple select",
+    true_false: "True / False",
+    short_answer: "Short answer",
+};
+
+const DIFFICULTY_FILTER_LABELS: Record<string, string> = {
+    all: "All difficulties",
+    Easy: "Easy",
+    Medium: "Medium",
+    Hard: "Hard",
+};
+
 function difficultyVariant(difficulty: string | null) {
     if (!difficulty) return "outline" as const;
     const value = difficulty.toLowerCase();
@@ -90,6 +105,12 @@ export default function TeacherQuestionsPage() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [exporting, setExporting] = useState(false);
+    const isFirstRender = useRef(true);
+
+    const bankFilterLabels: Record<string, string> = { all: "All banks" };
+    banks.forEach((bank) => {
+        bankFilterLabels[bank.bankName ?? "__none__"] = `${bank.bankName ?? "Uncategorized"} (${bank.count})`;
+    });
 
     const [dialogOpen, setDialogOpen] = useState(false);
     // null = creating a new question; otherwise the id of the question being edited.
@@ -158,6 +179,13 @@ export default function TeacherQuestionsPage() {
     // on every single keystroke, and jump back to page 1 since the old
     // page number might not exist in the new filtered results.
     useEffect(() => {
+        // On first load the [page] effect above already fetched -- without
+        // this skip the same search request was sent twice.
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
         const timeout = setTimeout(() => {
             if (page !== 1) {
                 setPage(1);
@@ -426,7 +454,8 @@ export default function TeacherQuestionsPage() {
                     onChange={(e) => setSearch(e.target.value)}
                     className="max-w-xs"
                 />
-                <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value ?? "all")}>
+                {/* items = value -> label, so the closed dropdown shows "All types", not "all" */}
+                <Select items={TYPE_FILTER_LABELS} value={typeFilter} onValueChange={(value) => setTypeFilter(value ?? "all")}>
                     <SelectTrigger className="w-48">
                         <SelectValue />
                     </SelectTrigger>
@@ -438,7 +467,7 @@ export default function TeacherQuestionsPage() {
                         <SelectItem value="short_answer">Short answer</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select value={difficultyFilter} onValueChange={(value) => setDifficultyFilter(value ?? "all")}>
+                <Select items={DIFFICULTY_FILTER_LABELS} value={difficultyFilter} onValueChange={(value) => setDifficultyFilter(value ?? "all")}>
                     <SelectTrigger className="w-40">
                         <SelectValue />
                     </SelectTrigger>
@@ -449,7 +478,7 @@ export default function TeacherQuestionsPage() {
                         <SelectItem value="Hard">Hard</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select value={bankFilter} onValueChange={(value) => setBankFilter(value ?? "all")}>
+                <Select items={bankFilterLabels} value={bankFilter} onValueChange={(value) => setBankFilter(value ?? "all")}>
                     <SelectTrigger className="w-56">
                         <SelectValue />
                     </SelectTrigger>

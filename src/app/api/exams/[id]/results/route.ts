@@ -2,6 +2,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";  
+import { completeExpiredExams } from "@/lib/exam-status";
 import { NextResponse } from "next/server";
 
 
@@ -33,6 +34,9 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions)
+
+        // close exams whose end time has passed, so the status shown is current
+        await completeExpiredExams();
         if(!session){
             return NextResponse.json(
                 {error: "Unauthorized"},
@@ -91,16 +95,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             totalAttempts > 0
                 ? scores.reduce((a, b) => a + b, 0) / totalAttempts
                 : 0;
-        const highestScore = totalAttempts > 0 ? Math.max(...scores) : 0;
-        const lowestScore = totalAttempts > 0 ? Math.min(...scores) : 0;
+        const highestScore = scores.length > 0 ? Math.max(...scores) : 0;
+        const lowestScore = scores.length > 0 ? Math.min(...scores) : 0;
 
-        const passcount = attempts.filter(
-            (attempt) =>
-                attempt.score !== null &&
-                exam.passingMarks !== null &&
-                attempt.score >= exam.passingMarks
-        ).length;
-        const failcount = totalAttempts - passcount;
+        // With no pass mark there is no pass/fail -- send null, not "0 passed"
+        let passcount: number | null = null;
+        let failcount: number | null = null;
+        if (exam.passingMarks !== null) {
+            const passingMarks = exam.passingMarks;
+            passcount = scores.filter((score) => score >= passingMarks).length;
+            failcount = scores.length - passcount;
+        }
 
         return NextResponse.json(
             {
@@ -108,6 +113,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                     id: exam.id,
                     title: exam.title,
                     status: exam.status,
+                    totalMarks: exam.totalMarks,
+                    passingMarks: exam.passingMarks,
                 },
                 statistic: {
                     totalAttempts,

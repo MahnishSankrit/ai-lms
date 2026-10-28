@@ -46,6 +46,8 @@ import { Prisma, QuestionType } from "@prisma/client";
  *     responses:
  *       200:
  *         description: Matching questions
+ *       400:
+ *         description: Invalid page, limit, sortBy or type
  *       401:
  *         description: Not logged in
  *       403:
@@ -75,10 +77,39 @@ export async function GET(req: Request) {
         const searchQuery = searchParams.get("q") || "";
         const difficultyFilter = searchParams.get("difficulty");
         const typeFilter = searchParams.get("type");
-        const page = parseInt(searchParams.get("page") || "1");
-        const limit = parseInt(searchParams.get("limit") || "10");
+        const page = Number(searchParams.get("page") || "1");
+        const limit = Number(searchParams.get("limit") || "10");
         const sortBy = searchParams.get("sortBy") || "createdAt";
         const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
+
+        // Bad input (page=-1, limit=abc) used to reach Prisma and crash with a 500
+        if (!Number.isInteger(page) || page < 1) {
+            return NextResponse.json(
+                { error: "page must be a whole number of 1 or more" },
+                { status: 400 }
+            )
+        }
+        if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+            return NextResponse.json(
+                { error: "limit must be a whole number between 1 and 100" },
+                { status: 400 }
+            )
+        }
+        // sortBy goes straight into orderBy, so only allow real columns
+        const allowedSortFields = ["createdAt", "updatedAt", "questionText", "difficulty", "marks", "type"];
+        if (!allowedSortFields.includes(sortBy)) {
+            return NextResponse.json(
+                { error: "Invalid sortBy" },
+                { status: 400 }
+            )
+        }
+        const allowedTypes = ["mcq", "multiple_select", "true_false", "short_answer"];
+        if (typeFilter && !allowedTypes.includes(typeFilter)) {
+            return NextResponse.json(
+                { error: "Invalid type" },
+                { status: 400 }
+            )
+        }
 
         const where: Prisma.QuestionWhereInput = {
             createdById: teacherId,

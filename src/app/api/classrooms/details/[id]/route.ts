@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { completeExpiredExams } from "@/lib/exam-status";
 import * as z from "zod";
 
 
@@ -36,6 +37,9 @@ import * as z from "zod";
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);
+
+        // close exams whose end time has passed, so the status shown is current
+        await completeExpiredExams();
         if (!session) {
             return NextResponse.json(
                 { error: "Unauthorized" },
@@ -111,7 +115,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         const exams = await prisma.exam.findMany({
             where: {
                 classroomId,
-                status: { in: ["published", "completed"] },
+                status: { in: ["published", "ongoing", "completed"] },
             },
             orderBy: { startsAt: "asc" },
             select: {

@@ -8,12 +8,9 @@
 
 import { withAuth } from "next-auth/middleware";
 
+// No custom function: it only logged every request's path and full JWT,
+// which floods the logs (one line per sidebar prefetch) and leaks tokens.
 export default withAuth(
-  function middleware(req) {
-    console.log("=== MIDDLEWARE ===");
-    console.log("Path:", req.nextUrl.pathname);
-    console.log("Token:", req.nextauth.token);
-  },
   {
     pages: {
       signIn: "/login",

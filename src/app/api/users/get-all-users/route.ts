@@ -62,6 +62,7 @@ export async function GET(req: Request) {
                 id: true,
                 email: true,   
                 role: true,
+                status: true, // so the admin page can show the current status
                 isVerified: true,
                 createdAt: true,
             }

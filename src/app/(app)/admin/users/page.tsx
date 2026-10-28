@@ -43,8 +43,15 @@ type User = {
     id: string;
     email: string;
     role: string;
+    status: string;
     isVerified: boolean;
     createdAt: string;
+};
+
+const STATUS_LABELS: Record<string, string> = {
+    active: "Active",
+    inactive: "Inactive",
+    suspended: "Suspended",
 };
 
 export default function AdminUsersPage() {
@@ -128,10 +135,39 @@ export default function AdminUsersPage() {
                 return;
             }
 
-            toast.success("User deleted");
+            // Users with exam/classroom history are deactivated, not deleted
+            if (data.deactivated) {
+                toast.success(data.message);
+            } else {
+                toast.success("User deleted");
+            }
             loadUsers();
         } catch (err) {
             console.error("Error deleting user:", err);
+        }
+    };
+
+    // Manually mark a user's email as verified (e.g. their email never arrived)
+    const handleVerify = async (userId: string) => {
+        try {
+            const response = await fetch("/api/users/verify", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: userId }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                toast.error(data.error || "Could not verify user");
+                return;
+            }
+
+            toast.success("User verified");
+            loadUsers();
+        } catch (err) {
+            console.error("Error verifying user:", err);
+            toast.error("Something went wrong. Please try again.");
         }
     };
 
@@ -257,14 +293,26 @@ export default function AdminUsersPage() {
                                             <Badge variant="outline" className="capitalize">{user.role}</Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={user.isVerified ? "default" : "secondary"}>
-                                                {user.isVerified ? "Verified" : "Not verified"}
-                                            </Badge>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant={user.isVerified ? "default" : "secondary"}>
+                                                    {user.isVerified ? "Verified" : "Not verified"}
+                                                </Badge>
+                                                {!user.isVerified && (
+                                                    <Button variant="outline" size="sm" onClick={() => handleVerify(user.id)}>
+                                                        Verify
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell>
+                                            {/* value = the user's current status, so the admin can see it;
+                                                disabled for your own row (the API blocks it too) */}
                                             <Select
+                                                items={STATUS_LABELS}
+                                                value={user.status}
+                                                disabled={isSelf}
                                                 onValueChange={(value: string | null) => {
-                                                    if (value) handleStatusChange(user.id, value);
+                                                    if (value && value !== user.status) handleStatusChange(user.id, value);
                                                 }}
                                             >
                                                 <SelectTrigger className="w-36">

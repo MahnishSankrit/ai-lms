@@ -13,8 +13,9 @@ type Statistic = {
     averageScore: number;
     highestScore: number;
     lowestScore: number;
-    passcount: number;
-    failcount: number;
+    // null when the exam has no passing mark
+    passcount: number | null;
+    failcount: number | null;
 };
 
 type Attempt = {
@@ -30,6 +31,7 @@ export default function ExamResultsPage() {
     const examId = params.id as string;
 
     const [examTitle, setExamTitle] = useState("");
+    const [totalMarks, setTotalMarks] = useState(0);
     const [statistic, setStatistic] = useState<Statistic | null>(null);
     const [attempts, setAttempts] = useState<Attempt[]>([]);
     const [loading, setLoading] = useState(true);
@@ -46,6 +48,7 @@ export default function ExamResultsPage() {
                 }
 
                 setExamTitle(data.exam.title);
+                setTotalMarks(data.exam.totalMarks);
                 setStatistic(data.statistic);
                 setAttempts(data.attempts);
             })
@@ -71,24 +74,29 @@ export default function ExamResultsPage() {
                 </div>
                 <div className="rounded-md border border-border bg-card px-4 py-3">
                     <p className="text-xs text-muted-foreground">Average</p>
-                    <p className="text-lg font-semibold text-foreground">{statistic.averageScore.toFixed(1)}</p>
+                    <p className="text-lg font-semibold text-foreground">{statistic.averageScore.toFixed(1)}/{totalMarks}</p>
                 </div>
                 <div className="rounded-md border border-border bg-card px-4 py-3">
                     <p className="text-xs text-muted-foreground">Highest</p>
-                    <p className="text-lg font-semibold text-foreground">{statistic.highestScore}</p>
+                    <p className="text-lg font-semibold text-foreground">{statistic.highestScore}/{totalMarks}</p>
                 </div>
                 <div className="rounded-md border border-border bg-card px-4 py-3">
                     <p className="text-xs text-muted-foreground">Lowest</p>
-                    <p className="text-lg font-semibold text-foreground">{statistic.lowestScore}</p>
+                    <p className="text-lg font-semibold text-foreground">{statistic.lowestScore}/{totalMarks}</p>
                 </div>
-                <div className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3">
-                    <p className="text-xs text-muted-foreground">Passed</p>
-                    <p className="text-lg font-semibold text-green-700 dark:text-green-400">{statistic.passcount}</p>
-                </div>
-                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
-                    <p className="text-xs text-muted-foreground">Failed</p>
-                    <p className="text-lg font-semibold text-destructive">{statistic.failcount}</p>
-                </div>
+                {/* No passing mark set = no pass/fail to show */}
+                {statistic.passcount !== null && statistic.failcount !== null && (
+                    <>
+                        <div className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3">
+                            <p className="text-xs text-muted-foreground">Passed</p>
+                            <p className="text-lg font-semibold text-green-700 dark:text-green-400">{statistic.passcount}</p>
+                        </div>
+                        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
+                            <p className="text-xs text-muted-foreground">Failed</p>
+                            <p className="text-lg font-semibold text-destructive">{statistic.failcount}</p>
+                        </div>
+                    </>
+                )}
             </div>
 
             <h2 className="mt-8 text-lg font-semibold text-foreground">Student attempts</h2>
@@ -104,7 +112,7 @@ export default function ExamResultsPage() {
                     >
                         <span className="text-foreground">{attempt.student.email}</span>
                         <span className="capitalize text-muted-foreground">{attempt.status}</span>
-                        <span className="font-semibold text-foreground">{attempt.score ?? "-"}</span>
+                        <span className="font-semibold text-foreground">{attempt.score === null ? "-" : `${attempt.score}/${totalMarks}`}</span>
                     </Link>
                 ))}
             </div>

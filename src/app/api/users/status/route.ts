@@ -62,10 +62,20 @@ export async function PATCH(req: Request) {
         }
         const body = await req.json();
         const { id, status } = body;
-        const validatedData = updateStatusSchema.parse({ userId: id, status });
-        if (!validatedData.userId || !validatedData.status) {
+        // safeParse instead of parse: a bad status used to throw and come back as a 500
+        const parsed = updateStatusSchema.safeParse({ userId: id, status });
+        if (!parsed.success) {
             return NextResponse.json(
-                { error: "Missing user ID or status" },
+                { error: "Invalid user ID or status (must be active, inactive or suspended)" },
+                { status: 400 }
+            );
+        }
+        const validatedData = parsed.data;
+
+        // Same rule as delete: an admin can't lock themselves out
+        if (validatedData.userId === user.user.id) {
+            return NextResponse.json(
+                { error: "You cannot change your own status" },
                 { status: 400 }
             );
         }

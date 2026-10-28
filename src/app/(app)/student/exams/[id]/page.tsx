@@ -54,6 +54,8 @@ type ExamData = {
     duration: number; // minutes
     requiresAccessCode: boolean;
     fullscreenRequired: boolean;
+    questionsCount: number;
+    // empty until the attempt has started (server-side access-code gate)
     questions: Question[];
 };
 
@@ -217,6 +219,16 @@ export default function TakeExamPage() {
                 return;
             }
 
+            // The exam API only sends questions once an attempt exists
+            // (server-side access-code gate), so load them now.
+            const examResponse = await fetch(`/api/exams/${examId}`);
+            const examData = await examResponse.json();
+            if (!examResponse.ok) {
+                setCodeError(examData.error || "Could not load the exam questions");
+                return;
+            }
+            setExam(examData.exam);
+
             setAttemptId(data.attemptId);
             // the server works out the time left (capped by the exam's end time)
             setRemainingSeconds(data.remainingSeconds);
@@ -353,7 +365,7 @@ export default function TakeExamPage() {
             <div className="mx-auto max-w-sm">
                 <h1 className="text-2xl font-bold tracking-tight">{exam.title}</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                    {exam.duration} minutes · {exam.questions.length} question(s)
+                    {exam.duration} minutes · {exam.questionsCount} question(s)
                 </p>
 
                 <form onSubmit={handleStartAttempt} className="mt-6 flex flex-col gap-3">
