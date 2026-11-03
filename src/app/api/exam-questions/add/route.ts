@@ -24,15 +24,16 @@ import { recalculateTotalMarks } from "@/lib/grading";
  *         application/json:
  *           schema:
  *             type: object
- *             required: [examId, quesId]
+ *             required: [examId]
  *             properties:
  *               examId: { type: string }
- *               quesId: { type: string }
+ *               quesId: { type: string, description: "Add one question" }
+ *               quesIds: { type: array, items: { type: string }, description: "Add many questions at once (1-1000); ones already in the exam are skipped" }
  *     responses:
  *       200:
- *         description: Question added to exam successfully (createExam.id is the examQuestionId)
+ *         description: Question(s) added. Single mode returns createExam (createExam.id is the examQuestionId); bulk mode returns addedCount and skippedCount
  *       400:
- *         description: Question already attached to this exam
+ *         description: Question already attached to this exam (single mode), or invalid quesIds
  *       401:
  *         description: Not logged in
  *       403:
@@ -60,8 +61,17 @@ export async function POST(req: Request) {
             )
         }
 
-        const { examId, quesId } = await req.json();
+        const { examId, quesId, quesIds } = await req.json();
         const teacherId = session.user.id;
+
+        // BULK MODE: quesIds = [...] adds many questions in one request
+        // (the "Select all" / "Add selected" buttons on the edit exam page)
+        if (quesIds !== undefined) {
+            if (!teacherId) {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+            }
+            return addManyQuestions(examId, quesIds, teacherId);
+        }
 
         // find the exam;
         const exam = await prisma.exam.findUnique({
@@ -156,11 +166,72 @@ export async function POST(req: Request) {
             { status: 500 }
         )
     }
+}
 
+// Same checks as adding one question (own the exam, own every question),
+// but for a list. Questions already in the exam are skipped, not errors.
+async function addManyQuestions(examId: string, quesIds: unknown, teacherId: string) {
+    if (!Array.isArray(quesIds) || quesIds.length === 0 || quesIds.length > 1000) {
+        return NextResponse.json(
+            { error: "quesIds must be a list of 1 to 1000 question ids" },
+            { status: 400 }
+        )
+    }
+    if (!quesIds.every((id) => typeof id === "string")) {
+        return NextResponse.json(
+            { error: "quesIds must only contain question ids" },
+            { status: 400 }
+        )
+    }
+    const uniqueIds = [...new Set(quesIds as string[])];
 
+    const exam = await prisma.exam.findUnique({ where: { id: examId } });
+    if (!exam) {
+        return NextResponse.json({ error: "Exam not found" }, { status: 404 })
+    }
+    if (exam.createdById !== teacherId) {
+        return NextResponse.json(
+            { error: "Forbidden, you are not the creator of this exam" },
+            { status: 403 }
+        )
+    }
 
+    // Every id must be a question this teacher created
+    const ownedCount = await prisma.question.count({
+        where: { id: { in: uniqueIds }, createdById: teacherId },
+    });
+    if (ownedCount !== uniqueIds.length) {
+        return NextResponse.json(
+            { error: "Some questions were not found or are not yours" },
+            { status: 403 }
+        )
+    }
 
+    // New questions go after the ones already in the exam
+    const existingCount = await prisma.examQuestion.count({ where: { examId } });
 
+    // skipDuplicates: questions already in this exam are ignored
+    // (the @@unique([examId, questionId]) rule stops doubles)
+    const result = await prisma.examQuestion.createMany({
+        data: uniqueIds.map((questionId, index) => ({
+            examId,
+            questionId,
+            order: existingCount + index + 1,
+        })),
+        skipDuplicates: true,
+    });
+
+    // one recalculation for the whole batch
+    await recalculateTotalMarks(examId);
+
+    return NextResponse.json(
+        {
+            message: `${result.count} question(s) added to exam`,
+            addedCount: result.count,
+            skippedCount: uniqueIds.length - result.count,
+        },
+        { status: 200 }
+    )
 }
 
 

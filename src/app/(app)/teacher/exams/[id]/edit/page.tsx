@@ -89,6 +89,9 @@ export default function EditExamPage() {
     const [bankSearch, setBankSearch] = useState("");
     const [bankFilter, setBankFilter] = useState("all");
     const [bankPage, setBankPage] = useState(1);
+    // ids of bank questions ticked for "Add selected"
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [addingSelected, setAddingSelected] = useState(false);
 
     // Whenever the start time is picked, push the end time forward to
     // match it automatically, based on whatever duration is set.
@@ -330,6 +333,43 @@ export default function EditExamPage() {
         }
     };
 
+    const toggleSelected = (questionId: string) => {
+        if (selectedIds.includes(questionId)) {
+            setSelectedIds(selectedIds.filter((id) => id !== questionId));
+        } else {
+            setSelectedIds([...selectedIds, questionId]);
+        }
+    };
+
+    // Adds every ticked question in one request
+    const handleAddSelected = async (questionIds: string[]) => {
+        if (questionIds.length === 0) return;
+        setAddingSelected(true);
+
+        try {
+            const response = await fetch("/api/exam-questions/add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ examId, quesIds: questionIds }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                toast.error(data.error || "Could not add questions");
+                return;
+            }
+
+            toast.success(`${data.addedCount} question(s) added to exam`);
+            setSelectedIds([]);
+            loadExam();
+        } catch (err) {
+            console.error("Error adding questions:", err);
+            toast.error("Something went wrong. Please try again.");
+        } finally {
+            setAddingSelected(false);
+        }
+    };
+
     const handleRemoveQuestion = async (examQuestionId: string) => {
         try {
             const response = await fetch("/api/exam-questions/remove", {
@@ -389,6 +429,29 @@ export default function EditExamPage() {
     const bankTotalPages = Math.max(1, Math.ceil(filteredBankQuestions.length / PAGE_SIZE));
     const safeBankPage = Math.min(bankPage, bankTotalPages);
     const bankPageItems = filteredBankQuestions.slice((safeBankPage - 1) * PAGE_SIZE, safeBankPage * PAGE_SIZE);
+
+    // "Select all" = every question matching the current bank + search,
+    // across all pages (not just the 10 on screen)
+    const filteredIds = filteredBankQuestions.map((question) => question.id);
+    const allFilteredSelected =
+        filteredIds.length > 0 && filteredIds.every((id) => selectedIds.includes(id));
+
+    const toggleSelectAll = () => {
+        if (allFilteredSelected) {
+            // untick only the ones in the current filter
+            setSelectedIds(selectedIds.filter((id) => !filteredIds.includes(id)));
+        } else {
+            const merged = [...selectedIds];
+            for (const id of filteredIds) {
+                if (!merged.includes(id)) merged.push(id);
+            }
+            setSelectedIds(merged);
+        }
+    };
+
+    // a ticked question may have been added one-by-one since; only count the ones still available
+    const availableIds = availableQuestions.map((question) => question.id);
+    const selectedAvailableIds = selectedIds.filter((id) => availableIds.includes(id));
 
     return (
         <div className="w-full">
@@ -643,6 +706,28 @@ export default function EditExamPage() {
                         />
                     </div>
 
+                    {filteredBankQuestions.length > 0 && (
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/50 px-3 py-2">
+                            <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                                <input
+                                    type="checkbox"
+                                    checked={allFilteredSelected}
+                                    onChange={toggleSelectAll}
+                                    className="size-4 accent-primary"
+                                />
+                                Select all ({filteredBankQuestions.length})
+                            </label>
+                            <button
+                                type="button"
+                                onClick={() => handleAddSelected(selectedAvailableIds)}
+                                disabled={selectedAvailableIds.length === 0 || addingSelected}
+                                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {addingSelected ? "Adding..." : `Add selected (${selectedAvailableIds.length})`}
+                            </button>
+                        </div>
+                    )}
+
                     <div className="mt-3 flex flex-col gap-2">
                         {bankPageItems.map((question) => (
                             <QuestionRow
@@ -650,6 +735,8 @@ export default function EditExamPage() {
                                 question={question}
                                 actionLabel="Add"
                                 onAction={() => handleAddQuestion(question.id)}
+                                selected={selectedIds.includes(question.id)}
+                                onToggleSelect={() => toggleSelected(question.id)}
                             />
                         ))}
                         {filteredBankQuestions.length === 0 && (
@@ -673,15 +760,29 @@ function QuestionRow({
     actionLabel,
     danger,
     onAction,
+    selected,
+    onToggleSelect,
 }: {
     number?: number;
     question: BankQuestion;
     actionLabel: string;
     danger?: boolean;
     onAction: () => void;
+    // only passed for bank rows, which get a checkbox for "Add selected"
+    selected?: boolean;
+    onToggleSelect?: () => void;
 }) {
     return (
         <div className="flex items-start gap-3 rounded-md border border-border px-3 py-2.5">
+            {onToggleSelect && (
+                <input
+                    type="checkbox"
+                    checked={selected ?? false}
+                    onChange={onToggleSelect}
+                    aria-label="Select question"
+                    className="mt-1 size-4 shrink-0 accent-primary"
+                />
+            )}
             {number !== undefined && (
                 <span className="mt-0.5 w-6 shrink-0 text-xs font-semibold text-muted-foreground">{number}.</span>
             )}

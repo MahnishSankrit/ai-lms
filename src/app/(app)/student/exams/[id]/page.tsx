@@ -22,6 +22,7 @@ import { useEffect, useState } from "react";
 import PageSkeleton from "@/components/page-skeleton";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { formatIndianDateTime } from "@/lib/format-date";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -55,6 +56,7 @@ type ExamData = {
     requiresAccessCode: boolean;
     fullscreenRequired: boolean;
     questionsCount: number;
+    endTime: string | null; // when the exam closes for everyone (null = no end time)
     // empty until the attempt has started (server-side access-code gate)
     questions: Question[];
 };
@@ -367,6 +369,12 @@ export default function TakeExamPage() {
                 <p className="mt-2 text-sm text-muted-foreground">
                     {exam.duration} minutes · {exam.questionsCount} question(s)
                 </p>
+                {exam.endTime && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Exam closes on <span className="font-medium text-foreground">{formatIndianDateTime(exam.endTime)}</span>
+                        {" "}— start before then. If it closes before your {exam.duration} minutes are up, your exam ends at that time.
+                    </p>
+                )}
 
                 <form onSubmit={handleStartAttempt} className="mt-6 flex flex-col gap-3">
                     {exam.requiresAccessCode && (
@@ -401,6 +409,14 @@ export default function TakeExamPage() {
     const seconds = remainingSeconds % 60;
     const timeLabel = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
+    // This student's own end time. remainingSeconds comes from the server
+    // (start time + duration, cut short by the exam's end time), so
+    // "now + time left" is exactly when their exam will be submitted.
+    const myEndTime = new Date(Date.now() + remainingSeconds * 1000).toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+
     // For the submit dialog: which question numbers have no answer yet?
     const unansweredNumbers: number[] = [];
     exam.questions.forEach((question, index) => {
@@ -415,9 +431,12 @@ export default function TakeExamPage() {
         <div>
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">{exam.title}</h1>
-                <span className="rounded-md bg-destructive/10 px-3 py-1 text-sm font-semibold text-destructive">
-                    Time left: {timeLabel}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                    <span className="rounded-md bg-destructive/10 px-3 py-1 text-sm font-semibold text-destructive">
+                        Time left: {timeLabel}
+                    </span>
+                    <span className="text-xs text-muted-foreground">Ends at {myEndTime}</span>
+                </div>
             </div>
 
             {exam.description && <p className="mt-2 text-sm text-muted-foreground">{exam.description}</p>}
