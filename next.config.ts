@@ -9,9 +9,18 @@ const nextConfig: NextConfig = {
   // Vercel's file tracing can miss -- force the Linux binary into the
   // functions that read PDFs. Without it production failed with
   // "DOMMatrix is not defined".
+  // pdfjs-dist also loads its worker file (pdf.worker.mjs) with a dynamic
+  // import that tracing misses, so include that too.
   outputFileTracingIncludes: {
-    "/api/ai/extract-pdf": ["./node_modules/@napi-rs/canvas-linux-x64-gnu/**/*"],
-    "/api/upload/[id]": ["./node_modules/@napi-rs/canvas-linux-x64-gnu/**/*"],
+    "/api/ai/extract-pdf": [
+      "./node_modules/@napi-rs/canvas-linux-x64-gnu/**/*",
+      "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
+    ],
+    // "*" not "[id]": these keys are glob patterns, and [id] would mean "i or d"
+    "/api/upload/*": [
+      "./node_modules/@napi-rs/canvas-linux-x64-gnu/**/*",
+      "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
+    ],
   },
   // Makes the version from package.json available in the browser
   // (shown in the dashboard footer) without bundling all of package.json.
