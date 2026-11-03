@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 // import { prisma } from "@/lib/prisma";
-import { PDFParse } from "pdf-parse";
+import { extractPdfText } from "@/lib/pdf";
 
 
 /**
@@ -97,17 +97,16 @@ export async function POST(req: Request) {
 
 
         // read the pdf file as an array buffer
-        const pdf = new PDFParse({ data: buffer });
-        const data = await pdf.getText();
+        const pdfText = await extractPdfText(buffer);
 
-        if (!data.text.trim()) {
+        if (!pdfText.trim()) {
             return NextResponse.json(
                 { error: "No readable text found in PDF", },
                 { status: 400, }
             );
         }
 
-        const text = data.text.trim();
+        const text = pdfText.trim();
 
         return NextResponse.json(
             { message: "PDF text extracted successfully", text },

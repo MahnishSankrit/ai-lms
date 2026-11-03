@@ -2,7 +2,17 @@ import type { NextConfig } from "next";
 import packageJson from "./package.json";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdf-parse", "pdfjs-dist"],
+  // Loaded from node_modules at runtime instead of being bundled
+  // (they ship native binaries / worker files the bundler can't handle).
+  serverExternalPackages: ["pdf-parse", "pdfjs-dist", "@napi-rs/canvas"],
+  // @napi-rs/canvas picks its native binary with a dynamic require, which
+  // Vercel's file tracing can miss -- force the Linux binary into the
+  // functions that read PDFs. Without it production failed with
+  // "DOMMatrix is not defined".
+  outputFileTracingIncludes: {
+    "/api/ai/extract-pdf": ["./node_modules/@napi-rs/canvas-linux-x64-gnu/**/*"],
+    "/api/upload/[id]": ["./node_modules/@napi-rs/canvas-linux-x64-gnu/**/*"],
+  },
   // Makes the version from package.json available in the browser
   // (shown in the dashboard footer) without bundling all of package.json.
   env: {

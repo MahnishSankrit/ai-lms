@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { PDFParse } from "pdf-parse";
+import { extractPdfText } from "@/lib/pdf";
 
 /**
  * @swagger
@@ -92,10 +92,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer); // thos is for the next step where we will parse the questions from the file using the buffer
 
-        // dynamically parse the PDF using the current pdf-parse API
-        const pdfParse = new PDFParse({ data: buffer });
-        const data = await pdfParse.getText();
-        const text = data.text;
+        // shared helper -- also sets up what pdf-parse needs on the server
+        const text = await extractPdfText(buffer);
 
         if (!text) {
             return NextResponse.json(
