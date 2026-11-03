@@ -89,9 +89,11 @@ export async function GET(req: Request) {
                 { status: 400 }
             )
         }
-        if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+        // 1000, not 100: the create/edit exam pages load the whole bank with
+        // limit=1000 to fill their bank dropdown and question list
+        if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
             return NextResponse.json(
-                { error: "limit must be a whole number between 1 and 100" },
+                { error: "limit must be a whole number between 1 and 1000" },
                 { status: 400 }
             )
         }

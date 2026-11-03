@@ -141,6 +141,9 @@ export default function EditExamPage() {
         // A 404 here just means the teacher has no questions yet.
         if (response.ok) {
             setBankQuestions(data.data);
+        } else if (response.status !== 404) {
+            // don't fail silently -- an empty list hid a 400 here before
+            console.error("Error loading question bank:", data.error);
         }
     };
 
