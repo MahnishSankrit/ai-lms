@@ -11,6 +11,9 @@
 //    (so refreshing the page doesn't lose progress).
 // 6. Watches for the student switching tabs (a basic anti-cheat check).
 //    Too many tab switches force-submits the exam.
+// Questions are shown ONE at a time. Previous / Next buttons move between
+// them, and the numbered buttons above jump straight to any question
+// (answered ones are highlighted).
 // 7. Lets the student submit manually with a "Submit exam" button, which
 //    first opens a confirm dialog listing any unanswered questions.
 // Toasts tell the student when the exam starts, each answer saves,
@@ -70,6 +73,8 @@ export default function TakeExamPage() {
     const [attemptId, setAttemptId] = useState("");
     const [answers, setAnswers] = useState<Record<string, string>>({});
     const [remainingSeconds, setRemainingSeconds] = useState(0);
+    // which question is on screen right now (0 = first question)
+    const [currentIndex, setCurrentIndex] = useState(0);
 
     // "loading" | "needs-code" | "ready" | "already-done" | "error"
     const [status, setStatus] = useState("loading");
@@ -427,6 +432,11 @@ export default function TakeExamPage() {
     });
     const answeredCount = exam.questions.length - unansweredNumbers.length;
 
+    const totalQuestions = exam.questions.length;
+    const question = exam.questions[currentIndex];
+    const isFirst = currentIndex === 0;
+    const isLast = currentIndex === totalQuestions - 1;
+
     return (
         <div>
             <div className="flex items-center justify-between">
@@ -447,16 +457,51 @@ export default function TakeExamPage() {
                 </p>
             )}
 
-            <div className="mt-8 flex flex-col gap-6">
-                {exam.questions.map((question, index) => (
-                    <div key={question.id} className="rounded-md border border-border bg-card p-4">
+            {/* Question number buttons: click one to jump to it.
+                Current = outlined, answered = filled, unanswered = plain. */}
+            <div className="mt-6 flex flex-wrap gap-2">
+                {exam.questions.map((q, index) => {
+                    const answer = answers[q.id];
+                    const isAnswered = answer !== undefined && answer.trim() !== "";
+
+                    let buttonStyle = "border-border bg-background text-foreground hover:bg-muted";
+                    if (isAnswered) {
+                        buttonStyle = "border-primary bg-primary text-primary-foreground";
+                    }
+                    if (index === currentIndex) {
+                        buttonStyle += " ring-2 ring-ring ring-offset-2 ring-offset-background";
+                    }
+
+                    return (
+                        <button
+                            key={q.id}
+                            type="button"
+                            onClick={() => setCurrentIndex(index)}
+                            className={`size-9 rounded-md border text-sm font-medium ${buttonStyle}`}
+                        >
+                            {index + 1}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <p className="mt-4 text-sm text-muted-foreground">
+                Question {currentIndex + 1} of {totalQuestions} · {answeredCount} answered
+            </p>
+
+            {question && (
+                <div className="mt-3">
+                    <div className="rounded-md border border-border bg-card p-4">
                         <p className="font-medium text-foreground">
-                            {index + 1}. {question.question}{" "}
+                            {currentIndex + 1}. {question.question}{" "}
                             <span className="text-xs font-normal text-muted-foreground">({question.marks} marks)</span>
                         </p>
 
                         {question.type === "short_answer" ? (
                             <textarea
+                                // key makes React create a fresh textarea for each
+                                // question, so the right saved answer shows up
+                                key={question.id}
                                 defaultValue={answers[question.id] ?? ""}
                                 onBlur={(e) => {
                                     setAnswers((prev) => ({ ...prev, [question.id]: e.target.value }));
@@ -485,8 +530,28 @@ export default function TakeExamPage() {
                             </div>
                         )}
                     </div>
-                ))}
-            </div>
+
+                    {/* Previous / Next navigation */}
+                    <div className="mt-4 flex items-center justify-between">
+                        <button
+                            type="button"
+                            onClick={() => setCurrentIndex(currentIndex - 1)}
+                            disabled={isFirst}
+                            className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-40"
+                        >
+                            ← Previous
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setCurrentIndex(currentIndex + 1)}
+                            disabled={isLast}
+                            className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-40"
+                        >
+                            Next →
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Submit button opens a confirm dialog with a summary first */}
             <AlertDialog>

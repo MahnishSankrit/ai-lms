@@ -34,6 +34,10 @@ import {
     SidebarProvider,
 } from "@/components/ui/sidebar";
 import DashboardTopbar from "@/components/dashboard-topbar";
+import BackButton from "@/components/back-button";
+
+// Home dashboards have nothing to go "back" to, so no back button there.
+const HOME_PATHS = ["/dashboard", "/admin", "/teacher", "/student"];
 
 function getLinksForRole(role: string) {
     if (role === "admin") {
@@ -121,7 +125,10 @@ export default function DashboardNav({
 
             <SidebarInset>
                 <DashboardTopbar email={email} />
-                <div className="flex-1 p-6">{children}</div>
+                <div className="flex-1 p-6">
+                    {!HOME_PATHS.includes(pathname) && <BackButton />}
+                    {children}
+                </div>
                 <footer className="flex flex-wrap items-center justify-between gap-2 border-t px-6 py-3 text-xs text-muted-foreground">
                     <span>© {new Date().getFullYear()} AI LMS</span>
                     <span>v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
