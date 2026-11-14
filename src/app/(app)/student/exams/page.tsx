@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/empty-state";
 import ErrorState from "@/components/error-state";
 
+import PageHeader from "@/components/page-header";
 type Exam = {
     id: string;
     title: string;
@@ -56,9 +57,9 @@ export default function StudentExamsPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">Upcoming Exams</h1>
+            <PageHeader title="Upcoming Exams" />
 
-            <div className="mt-6">
+            <div>
                 {loading && (
                     <div className="flex flex-col gap-3">
                         <Skeleton className="h-20 w-full rounded-xl" />

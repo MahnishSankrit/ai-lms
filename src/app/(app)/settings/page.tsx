@@ -6,12 +6,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemePicker } from "@/components/theme-toggle";
 
+import PageHeader from "@/components/page-header";
 export default function SettingsPage() {
     return (
-        <div className="max-w-lg">
-            <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+        <div>
+            <PageHeader title="Settings" />
 
-            <Card className="mt-6">
+            <Card>
                 <CardHeader>
                     <CardTitle>Appearance</CardTitle>
                     <CardDescription>Choose light or dark mode, or follow your device setting.</CardDescription>

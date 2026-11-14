@@ -1,25 +1,109 @@
-// Lists every exam the teacher has created, with its status.
-// Draft exams can be published from here; any exam can be deleted.
+// Lists every exam the teacher has created.
+//
+// - Tabs filter by status (All / Ongoing / Scheduled / Completed / Drafts).
+// - Each row starts with a coloured status badge, then the title and key
+//   details on one line (classroom · questions · duration · start/end time).
+// - One visible button per row (Results, or Edit for drafts); everything
+//   else (Edit, Publish/Start/End, Delete) is behind the "⋯" menu.
+// - Delete asks for confirmation in a dialog first.
 
 "use client"
 
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import PageSkeleton from "@/components/page-skeleton";
 import Link from "next/link";
+import { toast } from "sonner";
+import { FileText, MoreHorizontal, Pencil, Play, Plus, Send, Square, Trash2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import EmptyState from "@/components/empty-state";
+import ErrorState from "@/components/error-state";
+import PageHeader from "@/components/page-header";
+import { formatIndianDateTime } from "@/lib/format-date";
 
 type Exam = {
     id: string;
     title: string;
-    status: string;
+    status: string; // draft | published | ongoing | completed
+    startsAt: string | null;
+    endsAt: string | null;
+    createdAt: string;
+    durationMinutes: number;
+    questionCount: number;
     classroom: { id: string; name: string };
 };
+
+// Tab value -> which exam statuses it shows ("all" shows everything).
+const TABS = [
+    { value: "all", label: "All" },
+    { value: "ongoing", label: "Ongoing" },
+    { value: "published", label: "Scheduled" },
+    { value: "completed", label: "Completed" },
+    { value: "draft", label: "Drafts" },
+];
+
+// Coloured status badge shown at the start of each row.
+function StatusBadge({ status }: { status: string }) {
+    let label = status;
+    let style = "bg-muted text-muted-foreground";
+
+    if (status === "ongoing") {
+        label = "Ongoing";
+        style = "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300";
+    } else if (status === "published") {
+        label = "Scheduled";
+        style = "bg-accent text-accent-foreground";
+    } else if (status === "completed") {
+        label = "Completed";
+        style = "bg-secondary text-secondary-foreground";
+    } else if (status === "draft") {
+        label = "Draft";
+        style = "bg-highlight/20 text-foreground";
+    }
+
+    return (
+        <span className={`inline-flex w-24 shrink-0 items-center justify-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${style}`}>
+            <span className="size-1.5 rounded-full bg-current" />
+            {label}
+        </span>
+    );
+}
+
+// The time part of the details line, depending on the status.
+function getTimeText(exam: Exam) {
+    if (exam.status === "ongoing" && exam.endsAt) return `Ends ${formatIndianDateTime(exam.endsAt)}`;
+    if (exam.status === "completed" && exam.endsAt) return `Ended ${formatIndianDateTime(exam.endsAt)}`;
+    if (exam.startsAt) return `Starts ${formatIndianDateTime(exam.startsAt)}`;
+    return "Not scheduled";
+}
 
 export default function TeacherExamsPage() {
     const [exams, setExams] = useState<Exam[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [actionMessage, setActionMessage] = useState("");
+    const [tab, setTab] = useState("all");
+
+    // the exam waiting for delete confirmation (null = dialog closed)
+    const [deleteTarget, setDeleteTarget] = useState<Exam | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const loadExams = async () => {
         setLoading(true);
@@ -47,92 +131,39 @@ export default function TeacherExamsPage() {
         loadExams();
     }, []);
 
-    const handlePublish = async (examId: string) => {
-        setActionMessage("");
-
+    // Publish / Start / End all work the same way: POST, toast, reload.
+    const runExamAction = async (examId: string, action: "publish" | "start" | "end", successMessage: string) => {
         try {
-            const response = await fetch(`/api/exams/${examId}/publish`, {
-                method: "POST",
-            });
+            const response = await fetch(`/api/exams/${examId}/${action}`, { method: "POST" });
             const data = await response.json();
 
             if (!response.ok) {
-                setActionMessage(data.error || "Could not publish exam");
-                toast.error(data.error || "Could not publish exam");
+                toast.error(data.error || `Could not ${action} exam`);
                 return;
             }
 
-            toast.success("Exam published");
-
+            toast.success(successMessage);
             loadExams();
         } catch (err) {
-            console.error("Error publishing exam:", err);
-            setActionMessage("Something went wrong. Please try again.");
+            console.error(`Error (${action}) exam:`, err);
             toast.error("Something went wrong. Please try again.");
         }
     };
 
-    const handleStart = async (examId: string) => {
-        setActionMessage("");
-
-        try {
-            const response = await fetch(`/api/exams/${examId}/start`, {
-                method: "POST",
-            });
-            const data = await response.json();
-
-            if (!response.ok) {
-                setActionMessage(data.error || "Could not start exam");
-                toast.error(data.error || "Could not start exam");
-                return;
-            }
-
-            toast.success("Exam started");
-
-            loadExams();
-        } catch (err) {
-            console.error("Error starting exam:", err);
-            setActionMessage("Something went wrong. Please try again.");
-            toast.error("Something went wrong. Please try again.");
-        }
-    };
-
-    const handleEnd = async (examId: string) => {
+    const handleEnd = (examId: string) => {
         if (!confirm("End this exam now? Any student still in progress will be auto-submitted immediately.")) {
             return;
         }
-
-        setActionMessage("");
-
-        try {
-            const response = await fetch(`/api/exams/${examId}/end`, {
-                method: "POST",
-            });
-            const data = await response.json();
-
-            if (!response.ok) {
-                setActionMessage(data.error || "Could not end exam");
-                toast.error(data.error || "Could not end exam");
-                return;
-            }
-
-            toast.success("Exam ended");
-
-            loadExams();
-        } catch (err) {
-            console.error("Error ending exam:", err);
-            setActionMessage("Something went wrong. Please try again.");
-            toast.error("Something went wrong. Please try again.");
-        }
+        runExamAction(examId, "end", "Exam ended");
     };
 
-    const handleDelete = async (examId: string) => {
-        if (!confirm("Delete this exam? This cannot be undone.")) return;
+    // Called from the confirm dialog's "Delete exam" button.
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        setDeleting(true);
 
         try {
-            const response = await fetch(`/api/exams/delete/${examId}`, {
-                method: "DELETE",
-            });
+            const response = await fetch(`/api/exams/delete/${deleteTarget.id}`, { method: "DELETE" });
 
             if (!response.ok) {
                 toast.error("Could not delete exam");
@@ -140,87 +171,157 @@ export default function TeacherExamsPage() {
             }
 
             toast.success("Exam deleted");
+            setDeleteTarget(null);
             loadExams();
         } catch (err) {
             console.error("Error deleting exam:", err);
             toast.error("Something went wrong. Please try again.");
+        } finally {
+            setDeleting(false);
         }
     };
 
+    // how many exams each tab has, shown next to the tab label
+    const countFor = (tabValue: string) => {
+        if (tabValue === "all") return exams.length;
+        return exams.filter((exam) => exam.status === tabValue).length;
+    };
+
+    const visibleExams = tab === "all" ? exams : exams.filter((exam) => exam.status === tab);
+
     return (
         <div>
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">My Exams</h1>
-                <Link
-                    href="/teacher/exams/new"
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
-                >
-                    + New exam
-                </Link>
-            </div>
-
-            {actionMessage && <p className="mt-3 text-sm text-destructive">{actionMessage}</p>}
-
-            <div className="mt-6">
-                {loading && <PageSkeleton />}
-                {error && <p className="text-sm text-destructive">{error}</p>}
-
-                {!loading && !error && exams.length === 0 && (
-                    <p className="text-sm text-muted-foreground">You haven&apos;t created any exam yet.</p>
-                )}
-
-                <div className="mt-4 flex flex-col gap-3">
-                    {exams.map((exam) => (
-                        <div key={exam.id} className="flex items-center justify-between rounded-md border border-border bg-card p-4">
-                            <div>
-                                <p className="font-semibold text-foreground">{exam.title}</p>
-                                <p className="text-sm text-muted-foreground">
-                                    {exam.classroom.name} · <span className="capitalize">{exam.status}</span>
-                                </p>
-                            </div>
-
-                            <div className="flex items-center gap-3 text-sm">
-                                <Link href={`/teacher/exams/${exam.id}/edit`} className="font-medium text-primary hover:underline">
-                                    Edit
-                                </Link>
-                                <Link href={`/teacher/exams/${exam.id}/results`} className="font-medium text-primary hover:underline">
-                                    Results
-                                </Link>
-                                {exam.status === "draft" && (
-                                    <button
-                                        onClick={() => handlePublish(exam.id)}
-                                        className="font-medium text-green-700 dark:text-green-400 hover:underline"
-                                    >
-                                        Publish
-                                    </button>
-                                )}
-                                {exam.status === "published" && (
-                                    <button
-                                        onClick={() => handleStart(exam.id)}
-                                        className="font-medium text-green-700 dark:text-green-400 hover:underline"
-                                    >
-                                        Start
-                                    </button>
-                                )}
-                                {exam.status === "ongoing" && (
-                                    <button
-                                        onClick={() => handleEnd(exam.id)}
-                                        className="font-medium text-destructive hover:underline"
-                                    >
-                                        End now
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => handleDelete(exam.id)}
-                                    className="font-medium text-destructive hover:underline"
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+            <PageHeader
+                title="My Exams"
+                actions={
+                    <Button nativeButton={false} render={<Link href="/teacher/exams/new" />}>
+                        <Plus /> New exam
+                    </Button>
+                }
+            >
+                {/* status tabs; scroll sideways on small phones instead of wrapping */}
+                <div className="-mx-1 overflow-x-auto px-1">
+                    <Tabs value={tab} onValueChange={(value) => setTab(String(value))}>
+                        <TabsList>
+                            {TABS.map((t) => (
+                                <TabsTrigger key={t.value} value={t.value}>
+                                    {t.label}
+                                    <span className="ml-1 text-xs text-muted-foreground">{countFor(t.value)}</span>
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
                 </div>
-            </div>
+            </PageHeader>
+
+            {loading && (
+                <div className="flex flex-col gap-3">
+                    <Skeleton className="h-20 rounded-xl" />
+                    <Skeleton className="h-20 rounded-xl" />
+                    <Skeleton className="h-20 rounded-xl" />
+                </div>
+            )}
+            {error && <ErrorState message={error} onRetry={loadExams} />}
+
+            {!loading && !error && visibleExams.length === 0 && (
+                <EmptyState
+                    icon={FileText}
+                    title={tab === "all" ? "No exams yet" : "No exams here"}
+                    description={tab === "all" ? "Click “New exam” to create your first one." : "Try another tab."}
+                />
+            )}
+
+            {!loading && !error && (
+                <div className="flex flex-col gap-3">
+                    {visibleExams.map((exam) => {
+                        const isDraft = exam.status === "draft";
+
+                        return (
+                            <div
+                                key={exam.id}
+                                className="flex flex-col gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10 sm:flex-row sm:items-center"
+                            >
+                                <StatusBadge status={exam.status} />
+
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate font-semibold">{exam.title}</p>
+                                    {/* key details on one line */}
+                                    <p className="text-sm text-muted-foreground">
+                                        {exam.classroom.name} · {exam.questionCount} Q{exam.questionCount === 1 ? "" : "s"} ·{" "}
+                                        {exam.durationMinutes} min · {getTimeText(exam)}
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    {/* one visible button: Edit for drafts, Results otherwise */}
+                                    {isDraft ? (
+                                        <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/teacher/exams/${exam.id}/edit`} />}>
+                                            <Pencil /> Edit
+                                        </Button>
+                                    ) : (
+                                        <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/teacher/exams/${exam.id}/results`} />}>
+                                            Results
+                                        </Button>
+                                    )}
+
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger
+                                            render={<Button variant="ghost" size="icon-sm" aria-label={`More actions for ${exam.title}`} />}
+                                        >
+                                            <MoreHorizontal />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            {!isDraft && (
+                                                <DropdownMenuItem render={<Link href={`/teacher/exams/${exam.id}/edit`} />}>
+                                                    <Pencil /> Edit
+                                                </DropdownMenuItem>
+                                            )}
+                                            {isDraft && (
+                                                <DropdownMenuItem onClick={() => runExamAction(exam.id, "publish", "Exam published")}>
+                                                    <Send /> Publish
+                                                </DropdownMenuItem>
+                                            )}
+                                            {exam.status === "published" && (
+                                                <DropdownMenuItem onClick={() => runExamAction(exam.id, "start", "Exam started")}>
+                                                    <Play /> Start now
+                                                </DropdownMenuItem>
+                                            )}
+                                            {exam.status === "ongoing" && (
+                                                <DropdownMenuItem onClick={() => handleEnd(exam.id)}>
+                                                    <Square /> End now
+                                                </DropdownMenuItem>
+                                            )}
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(exam)}>
+                                                <Trash2 /> Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* One delete-confirmation dialog for the whole page */}
+            <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete “{deleteTarget?.title}”?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This permanently deletes the exam, its questions list and all student attempts and
+                            results. This cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={deleting}>
+                            {deleting ? "Deleting..." : "Delete exam"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

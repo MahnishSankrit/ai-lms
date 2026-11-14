@@ -59,14 +59,55 @@ export async function GET(req: Request) {
                             name: true,
                         }
                     },
+
+                    // for the cards on the Exams / Results pages
+                    _count: {
+                        select: { questions: true },
+                    },
+                    attempts: {
+                        select: { score: true },
+                    },
                 },
                 orderBy: {
                     createdAt: "desc",
                 }
             })
 
+            // Add simple stats to each exam, using the same rules as
+            // /api/exams/[id]/results: only graded attempts (score not null)
+            // count, pass = score >= passingMarks, and no pass mark = no pass rate.
+            const examsWithStats = exams.map(({ attempts, _count, ...exam }) => {
+                const scores: number[] = [];
+                for (const attempt of attempts) {
+                    if (attempt.score !== null) {
+                        scores.push(attempt.score);
+                    }
+                }
+
+                let averagePercentage: number | null = null;
+                if (scores.length > 0 && exam.totalMarks > 0) {
+                    const total = scores.reduce((sum, score) => sum + score, 0);
+                    averagePercentage = (total / scores.length / exam.totalMarks) * 100;
+                }
+
+                let passRate: number | null = null;
+                if (scores.length > 0 && exam.passingMarks !== null) {
+                    const passingMarks = exam.passingMarks;
+                    const passed = scores.filter((score) => score >= passingMarks).length;
+                    passRate = (passed / scores.length) * 100;
+                }
+
+                return {
+                    ...exam,
+                    questionCount: _count.questions,
+                    attemptCount: attempts.length,
+                    averagePercentage,
+                    passRate,
+                };
+            });
+
             return NextResponse.json(
-                { exams },
+                { exams: examsWithStats },
                 { status: 200 }
             )
         }

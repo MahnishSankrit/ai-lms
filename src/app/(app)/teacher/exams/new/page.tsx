@@ -11,6 +11,7 @@ import PageSkeleton from "@/components/page-skeleton";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import PageHeader from "@/components/page-header";
 type Classroom = {
     id: string;
     name: string;
@@ -186,9 +187,9 @@ export default function NewExamPage() {
 
     return (
         <div className="w-full">
-            <h1 className="text-2xl font-bold tracking-tight">New Exam</h1>
+            <PageHeader title="New Exam" />
 
-            <form onSubmit={handleCreate} className="mt-6 grid w-full gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+            <form onSubmit={handleCreate} className="grid w-full gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
                 {/* Left column: exam details */}
                 <section className="flex flex-col gap-4 rounded-lg border border-border p-5 lg:self-start">
                     <h2 className="text-base font-semibold text-foreground">Exam details</h2>

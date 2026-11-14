@@ -34,6 +34,7 @@ import ErrorState from "@/components/error-state";
 import RelativeDate from "@/components/relative-date";
 import SimplePagination from "@/components/simple-pagination";
 
+import PageHeader from "@/components/page-header";
 const PAGE_SIZE = 10;
 
 type Attempt = {
@@ -146,10 +147,10 @@ export default function StudentAttemptsPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">Attempt History</h1>
+            <PageHeader title="Attempt History" />
 
             {/* Filters + sort */}
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3">
                 <Select value={classroomFilter} onValueChange={(value) => changeFilter(setClassroomFilter, value)}>
                     <SelectTrigger className="w-48" aria-label="Filter by classroom">
                         <SelectValue />
@@ -217,7 +218,50 @@ export default function StudentAttemptsPage() {
                     <EmptyState icon={History} title="No matches" description="Try changing the filters." />
                 )}
 
+                {/* Phones: one stacked card per attempt instead of a table row */}
                 {!loading && !error && pageItems.length > 0 && (
+                    <div className="flex flex-col gap-3 md:hidden">
+                        {pageItems.map((attempt) => {
+                            let href = `/student/exams/${attempt.examId}/results?attemptId=${attempt.id}`;
+                            if (attempt.status === "in_progress") {
+                                href = `/student/exams/${attempt.examId}`;
+                            }
+
+                            return (
+                                <Link
+                                    key={attempt.id}
+                                    href={href}
+                                    className="rounded-xl bg-card p-4 ring-1 ring-foreground/10 active:bg-muted"
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <p className="font-medium">{attempt.exam.title}</p>
+                                        <span className="shrink-0 text-sm font-semibold">
+                                            {attempt.score === null ? "—" : `${attempt.score} / ${attempt.exam.totalMarks}`}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{attempt.exam.classroom.name}</p>
+                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                        {attempt.autoSubmitReason ? (
+                                            <Badge variant="destructive">Auto submitted</Badge>
+                                        ) : (
+                                            <Badge variant={statusVariant(attempt.status)} className="capitalize">
+                                                {attempt.status.replace("_", " ")}
+                                            </Badge>
+                                        )}
+                                        <RelativeDate date={attempt.startedAt} />
+                                    </div>
+                                    {attempt.autoSubmitReason && (
+                                        <p className="mt-1 text-xs text-muted-foreground">{attempt.autoSubmitReason}</p>
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Tablet and up: the table */}
+                {!loading && !error && pageItems.length > 0 && (
+                    <div className="hidden rounded-xl bg-card ring-1 ring-foreground/10 md:block">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -272,6 +316,7 @@ export default function StudentAttemptsPage() {
                             ))}
                         </TableBody>
                     </Table>
+                    </div>
                 )}
 
                 <SimplePagination page={currentPage} totalPages={totalPages} onPageChange={setPage} />

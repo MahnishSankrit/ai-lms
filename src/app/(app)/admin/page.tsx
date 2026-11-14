@@ -10,6 +10,7 @@ import { GraduationCap, Presentation, ShieldCheck, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import StatCard from "@/components/stat-card";
 
+import PageHeader from "@/components/page-header";
 type User = {
     id: string;
     role: string;
@@ -52,16 +53,16 @@ export default function AdminHomePage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">Admin Overview</h1>
+            <PageHeader title="Admin Overview" />
 
             {loading ? (
-                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                     {Array.from({ length: 4 }).map((_, i) => (
                         <Skeleton key={i} className="h-24 rounded-xl" />
                     ))}
                 </div>
             ) : (
-                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                     <StatCard href="/admin/users" label="Total users" value={totalUsers} icon={Users} />
                     <StatCard href="/admin/users" label="Students" value={studentCount} icon={GraduationCap} />
                     <StatCard href="/admin/users" label="Teachers" value={teacherCount} icon={Presentation} />

@@ -118,11 +118,13 @@ export class AIService {
      */
     async generateQuestions(
         text: string,
-        numberOfQuestions: number = 10
+        numberOfQuestions: number = 10,
+        difficulty: string = "Mixed"
     ): Promise<AIQuestion[]> {
         const prompt = buildQuestionPrompt(
             text,
-            numberOfQuestions
+            numberOfQuestions,
+            difficulty
         );
 
         const rawResponse = await this.callAI(prompt);

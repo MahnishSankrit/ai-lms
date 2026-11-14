@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/error-state";
 
+import PageHeader from "@/components/page-header";
 type ClassroomDetails = {
     id: string;
     name: string;
@@ -200,10 +201,16 @@ export default function TeacherClassroomDetailsPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">{classroom.name}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{classroom.subject}</p>
-            {classroom.description && <p className="mt-2 text-sm text-muted-foreground">{classroom.description}</p>}
-            <p className="mt-2 text-xs text-muted-foreground">
+            <PageHeader
+                title={classroom.name}
+                description={
+                    <>
+                        {classroom.subject}
+                        {classroom.description && <span className="mt-1 block">{classroom.description}</span>}
+                    </>
+                }
+            />
+            <p className="-mt-3 text-xs text-muted-foreground">
                 Join code: {classroom.joinCode} · {classroom.memberCount} student(s)
             </p>
 

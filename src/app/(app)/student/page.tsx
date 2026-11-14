@@ -14,6 +14,7 @@ import EmptyState from "@/components/empty-state";
 import ScoreTrendChart from "@/components/score-trend-chart";
 import StatCard from "@/components/stat-card";
 
+import PageHeader from "@/components/page-header";
 type Exam = {
     id: string;
     title: string;
@@ -118,16 +119,16 @@ export default function StudentDashboardPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <PageHeader title="Dashboard" />
 
             {loading ? (
-                <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-6 sm:grid-cols-3">
                     <Skeleton className="h-24 rounded-xl" />
                     <Skeleton className="h-24 rounded-xl" />
                     <Skeleton className="h-24 rounded-xl" />
                 </div>
             ) : (
-                <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                <div className="mt-6 grid gap-6 sm:grid-cols-3">
                     <StatCard href="/student/classrooms" label="Classrooms" value={classroomCount} icon={Building2} />
                     <StatCard href="/student/exams" label="Upcoming exams" value={upcomingExams.length} icon={CalendarClock} />
                     <StatCard

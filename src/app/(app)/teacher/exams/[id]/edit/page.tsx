@@ -14,6 +14,7 @@ import PageSkeleton from "@/components/page-skeleton";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
+import PageHeader from "@/components/page-header";
 type Option = {
     id: string;
     optionText: string;
@@ -455,21 +456,19 @@ export default function EditExamPage() {
 
     return (
         <div className="w-full">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{exam.title}</h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        {exam.questions.length} question{exam.questions.length === 1 ? "" : "s"} · {examTotalMarks} marks · {exam.durationMinutes} min
-                    </p>
-                </div>
-                <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold capitalize text-muted-foreground">
-                    {exam.status}
-                </span>
-            </div>
+            <PageHeader
+                title={exam.title}
+                description={`${exam.questions.length} question${exam.questions.length === 1 ? "" : "s"} · ${examTotalMarks} marks · ${exam.durationMinutes} min`}
+                actions={
+                    <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold capitalize text-muted-foreground">
+                        {exam.status}
+                    </span>
+                }
+            />
 
-            {message && <p className="mt-3 text-sm text-muted-foreground">{message}</p>}
+            {message && <p className="-mt-3 mb-6 text-sm text-muted-foreground">{message}</p>}
 
-            <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2">
                 {/* Exam details form */}
                 <form onSubmit={handleSaveInfo} className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5">
                     <h2 className="text-base font-semibold text-foreground">Exam details</h2>

@@ -1,19 +1,37 @@
 // Lists the teacher's classrooms (with each one's average score and
-// pass rate) and lets them create a new one.
+// pass rate). The cards come first; the "New classroom" button opens the
+// create form in a dialog.
 
 "use client"
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Building2 } from "lucide-react";
+import { Building2, Copy, FileText, MoreHorizontal, Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import PageHeader from "@/components/page-header";
+import RelativeDate from "@/components/relative-date";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import EmptyState from "@/components/empty-state";
 import ErrorState from "@/components/error-state";
 
@@ -27,6 +45,7 @@ type Classroom = {
     totalAttempts: number;
     averageScore: number;
     passRate: number;
+    lastActiveAt: string;
 };
 
 export default function TeacherClassroomsPage() {
@@ -39,6 +58,7 @@ export default function TeacherClassroomsPage() {
     const [description, setDescription] = useState("");
     const [creating, setCreating] = useState(false);
     const [createMessage, setCreateMessage] = useState("");
+    const [dialogOpen, setDialogOpen] = useState(false);
 
     const loadClassrooms = async () => {
         setLoading(true);
@@ -94,7 +114,8 @@ export default function TeacherClassroomsPage() {
 
             toast.success(`Classroom created! Join code: ${data.classroom.joinCode}`);
 
-            setCreateMessage(`Classroom created! Join code: ${data.classroom.joinCode}`);
+            // close the dialog and clear the form for next time
+            setDialogOpen(false);
             setName("");
             setSubject("");
             setDescription("");
@@ -127,41 +148,70 @@ export default function TeacherClassroomsPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">My Classrooms</h1>
+            <PageHeader
+                title="My Classrooms"
+                description="Click a classroom to see its students, exams and announcements."
+                actions={
+                /* "New classroom" opens the create form in a dialog */
+                <Dialog
+                    open={dialogOpen}
+                    onOpenChange={(open) => {
+                        setDialogOpen(open);
+                        setCreateMessage("");
+                    }}
+                >
+                    <DialogTrigger render={<Button />}>
+                        <Plus /> New classroom
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Create a classroom</DialogTitle>
+                            <DialogDescription>
+                                Students join with the code you get after creating it.
+                            </DialogDescription>
+                        </DialogHeader>
 
-            <form onSubmit={handleCreate} className="mt-4 flex max-w-md flex-col gap-3 rounded-md border p-4">
-                <p className="text-sm font-semibold">Create a classroom</p>
+                        <form onSubmit={handleCreate} className="flex flex-col gap-3">
+                            <Input
+                                placeholder="Name (e.g. Grade 10 Mathematics)"
+                                required
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                            <Input
+                                placeholder="Subject (e.g. Mathematics)"
+                                required
+                                value={subject}
+                                onChange={(e) => setSubject(e.target.value)}
+                            />
+                            <Textarea
+                                placeholder="Description (optional)"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
 
-                <Input
-                    placeholder="Name (e.g. Grade 10 Mathematics)"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                />
-                <Input
-                    placeholder="Subject (e.g. Mathematics)"
-                    required
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                />
-                <Textarea
-                    placeholder="Description (optional)"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                />
+                            {createMessage && <p className="text-sm text-destructive">{createMessage}</p>}
 
-                <Button type="submit" disabled={creating} className="self-start">
-                    {creating ? "Creating..." : "Create classroom"}
-                </Button>
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={creating}>
+                                    {creating ? "Creating..." : "Create classroom"}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+                }
+            />
 
-                {createMessage && <p className="text-sm text-muted-foreground">{createMessage}</p>}
-            </form>
-
-            <div className="mt-8">
+            <div>
                 {loading && (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <Skeleton className="h-32 rounded-xl" />
-                        <Skeleton className="h-32 rounded-xl" />
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        <Skeleton className="h-40 rounded-xl" />
+                        <Skeleton className="h-40 rounded-xl" />
+                        <Skeleton className="h-40 rounded-xl" />
                     </div>
                 )}
                 {error && <ErrorState message={error} onRetry={loadClassrooms} />}
@@ -170,25 +220,74 @@ export default function TeacherClassroomsPage() {
                     <EmptyState
                         icon={Building2}
                         title="No classrooms yet"
-                        description="Create one above to get started."
+                        description="Click “New classroom” to create your first one."
                     />
                 )}
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                {/* 1 column on phones, 2 on tablets, 3 on desktop */}
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {classrooms.map((classroom) => (
-                        <Card key={classroom.classroomId}>
-                            <CardContent>
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <Link href={`/teacher/classrooms/${classroom.classroomId}`} className="font-semibold hover:underline">
+                        // The whole card is clickable: the title link is stretched over
+                        // the card with after:absolute after:inset-0. The ⋯ menu sits
+                        // above it (relative z-10) so it can still be clicked on its own.
+                        <Card
+                            key={classroom.classroomId}
+                            className="relative transition hover:bg-muted/50 hover:shadow-md hover:ring-primary/40"
+                        >
+                            <CardContent className="flex h-full flex-col">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <Link
+                                            href={`/teacher/classrooms/${classroom.classroomId}`}
+                                            className="font-semibold after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
+                                        >
                                             {classroom.classroomName}
                                         </Link>
-                                        <p className="text-sm text-muted-foreground">{classroom.subject || "No subject"}</p>
+                                        <p className="truncate text-sm text-muted-foreground">{classroom.subject || "No subject"}</p>
                                     </div>
-                                    <Badge variant="secondary">{classroom.totalStudents} student(s)</Badge>
+
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger
+                                            render={
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon-sm"
+                                                    aria-label="More actions"
+                                                    className="relative z-10 -mr-2 -mt-1"
+                                                />
+                                            }
+                                        >
+                                            <MoreHorizontal />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(classroom.joinCode);
+                                                    toast.success("Join code copied");
+                                                }}
+                                            >
+                                                <Copy /> Copy join code
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem variant="destructive" onClick={() => handleDelete(classroom.classroomId)}>
+                                                <Trash2 /> Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
 
-                                <div className="mt-3 flex flex-wrap gap-4 text-sm">
+                                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                                    <span className="flex items-center gap-1.5">
+                                        <Users className="size-4 text-muted-foreground" />
+                                        {classroom.totalStudents} student{classroom.totalStudents === 1 ? "" : "s"}
+                                    </span>
+                                    <span className="flex items-center gap-1.5">
+                                        <FileText className="size-4 text-muted-foreground" />
+                                        {classroom.totalExams} exam{classroom.totalExams === 1 ? "" : "s"}
+                                    </span>
+                                </div>
+
+                                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
                                     <div>
                                         <p className="text-xs text-muted-foreground">Avg. score</p>
                                         <p className="font-semibold">
@@ -201,22 +300,16 @@ export default function TeacherClassroomsPage() {
                                             {classroom.totalAttempts > 0 ? `${classroom.passRate}%` : "—"}
                                         </p>
                                     </div>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Exams</p>
-                                        <p className="font-semibold">{classroom.totalExams}</p>
-                                    </div>
                                 </div>
 
-                                <p className="mt-3 text-xs text-muted-foreground">Join code: {classroom.joinCode}</p>
-
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDelete(classroom.classroomId)}
-                                    className="mt-2 text-destructive"
-                                >
-                                    Delete
-                                </Button>
+                                <div className="mt-auto flex items-center justify-between gap-2 pt-4 text-xs text-muted-foreground">
+                                    <span>
+                                        Code: <span className="font-mono font-medium text-foreground">{classroom.joinCode}</span>
+                                    </span>
+                                    <span>
+                                        Active <RelativeDate date={classroom.lastActiveAt} />
+                                    </span>
+                                </div>
                             </CardContent>
                         </Card>
                     ))}

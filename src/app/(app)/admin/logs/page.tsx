@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import PageHeader from "@/components/page-header";
 type User = {
     id: string;
     email: string;
@@ -33,9 +34,9 @@ export default function AdminLogsPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">Logs</h1>
+            <PageHeader title="Logs" />
 
-            <h2 className="mt-6 text-lg font-semibold">Recent signups</h2>
+            <h2 className="text-lg font-semibold">Recent signups</h2>
 
             {loading && (
                 <div className="mt-4 flex flex-col gap-2">

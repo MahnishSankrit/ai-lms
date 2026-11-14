@@ -24,6 +24,7 @@ import ErrorState from "@/components/error-state";
 import RelativeDate from "@/components/relative-date";
 import SimplePagination from "@/components/simple-pagination";
 
+import PageHeader from "@/components/page-header";
 const PAGE_SIZE = 10;
 
 type ResultSummary = {
@@ -131,10 +132,10 @@ export default function StudentResultsPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">My Results</h1>
+            <PageHeader title="My Results" />
 
             {/* Filters + sort */}
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3">
                 <Select value={classroomFilter} onValueChange={(value) => changeFilter(setClassroomFilter, value)}>
                     <SelectTrigger className="w-48" aria-label="Filter by classroom">
                         <SelectValue />

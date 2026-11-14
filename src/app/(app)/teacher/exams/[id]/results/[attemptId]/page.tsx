@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/error-state";
 
+import PageHeader from "@/components/page-header";
 type Option = {
     id: string;
     optionText: string;
@@ -146,8 +147,8 @@ export default function GradeAttemptPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">{attempt.exam.title}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <PageHeader title={attempt.exam.title} />
+            <p className="-mt-4 mb-6 text-sm text-muted-foreground">
                 {attempt.student.email} · Score: {attempt.score ?? 0} / {attempt.exam.totalMarks}
             </p>
 

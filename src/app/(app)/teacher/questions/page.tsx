@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { BookOpen, Download, Pencil, Plus, Sparkles, Trash2, Upload } from "lucide-react";
+import { BookOpen, Download, MoreHorizontal, Pencil, Plus, Sparkles, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,8 +40,23 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/empty-state";
+import PageHeader from "@/components/page-header";
 import ErrorState from "@/components/error-state";
 
 type Option = {
@@ -84,6 +99,25 @@ const DIFFICULTY_FILTER_LABELS: Record<string, string> = {
     Hard: "Hard",
 };
 
+// The ⋯ menu on each question (Edit / Delete).
+function QuestionActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Question actions" />}>
+                <MoreHorizontal />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onEdit}>
+                    <Pencil /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onClick={onDelete}>
+                    <Trash2 /> Delete
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
 function difficultyVariant(difficulty: string | null) {
     if (!difficulty) return "outline" as const;
     const value = difficulty.toLowerCase();
@@ -113,6 +147,8 @@ export default function TeacherQuestionsPage() {
     });
 
     const [dialogOpen, setDialogOpen] = useState(false);
+    // the question shown in the side panel (null = panel closed)
+    const [viewing, setViewing] = useState<Question | null>(null);
     // null = creating a new question; otherwise the id of the question being edited.
     const [editingId, setEditingId] = useState<string | null>(null);
     const [questionText, setQuestionText] = useState("");
@@ -327,23 +363,85 @@ export default function TeacherQuestionsPage() {
 
     return (
         <div>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <h1 className="text-2xl font-bold tracking-tight">Question Bank</h1>
+            <PageHeader
+                title="Question Bank"
+                description="Click a question to see it in full."
+                actions={
+                    <>
+                        <Button variant="outline" nativeButton={false} render={<Link href="/teacher/ai" />}>
+                            <Sparkles /> AI Generate
+                        </Button>
+                        <Button onClick={openCreateDialog}>
+                            <Plus /> Create Question
+                        </Button>
 
-                <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
-                        <Download /> {exporting ? "Exporting..." : "Export CSV"}
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => toast("Bulk import isn't wired up yet.")}>
-                        <Upload /> Import
-                    </Button>
-                    <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/teacher/ai" />}>
-                        <Sparkles /> AI Generate
-                    </Button>
-
-                    <Button size="sm" onClick={openCreateDialog}>
-                        <Plus /> Create Question
-                    </Button>
+                        {/* less-used actions live behind the ⋯ menu */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={<Button variant="outline" size="icon" aria-label="More actions" />}
+                            >
+                                <MoreHorizontal />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => toast("Bulk import isn't wired up yet.")}>
+                                    <Upload /> Import
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleExport} disabled={exporting}>
+                                    <Download /> {exporting ? "Exporting..." : "Export CSV"}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </>
+                }
+            >
+                {/* All filters on one row; search takes the leftover space.
+                    On phones they stack. */}
+                <div className="flex flex-col gap-3 md:flex-row">
+                    <Input
+                        placeholder="Search questions..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="md:flex-1"
+                    />
+                    <Select items={bankFilterLabels} value={bankFilter} onValueChange={(value) => setBankFilter(value ?? "all")}>
+                        <SelectTrigger className="w-full md:w-48">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All banks</SelectItem>
+                            {banks.map((bank) => (
+                                <SelectItem key={bank.bankName ?? "__none__"} value={bank.bankName ?? "__none__"}>
+                                    {bank.bankName ?? "Uncategorized"} ({bank.count})
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    {/* items = value -> label, so the closed dropdown shows "All types", not "all" */}
+                    <Select items={TYPE_FILTER_LABELS} value={typeFilter} onValueChange={(value) => setTypeFilter(value ?? "all")}>
+                        <SelectTrigger className="w-full md:w-44">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All types</SelectItem>
+                            <SelectItem value="mcq">Multiple choice</SelectItem>
+                            <SelectItem value="multiple_select">Multiple select</SelectItem>
+                            <SelectItem value="true_false">True / False</SelectItem>
+                            <SelectItem value="short_answer">Short answer</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select items={DIFFICULTY_FILTER_LABELS} value={difficultyFilter} onValueChange={(value) => setDifficultyFilter(value ?? "all")}>
+                        <SelectTrigger className="w-full md:w-40">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All difficulties</SelectItem>
+                            <SelectItem value="Easy">Easy</SelectItem>
+                            <SelectItem value="Medium">Medium</SelectItem>
+                            <SelectItem value="Hard">Hard</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </PageHeader>
 
                     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
@@ -444,56 +542,75 @@ export default function TeacherQuestionsPage() {
                             </form>
                         </DialogContent>
                     </Dialog>
-                </div>
-            </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-                <Input
-                    placeholder="Search questions..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="max-w-xs"
-                />
-                {/* items = value -> label, so the closed dropdown shows "All types", not "all" */}
-                <Select items={TYPE_FILTER_LABELS} value={typeFilter} onValueChange={(value) => setTypeFilter(value ?? "all")}>
-                    <SelectTrigger className="w-48">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All types</SelectItem>
-                        <SelectItem value="mcq">Multiple choice</SelectItem>
-                        <SelectItem value="multiple_select">Multiple select</SelectItem>
-                        <SelectItem value="true_false">True / False</SelectItem>
-                        <SelectItem value="short_answer">Short answer</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Select items={DIFFICULTY_FILTER_LABELS} value={difficultyFilter} onValueChange={(value) => setDifficultyFilter(value ?? "all")}>
-                    <SelectTrigger className="w-40">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All difficulties</SelectItem>
-                        <SelectItem value="Easy">Easy</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="Hard">Hard</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Select items={bankFilterLabels} value={bankFilter} onValueChange={(value) => setBankFilter(value ?? "all")}>
-                    <SelectTrigger className="w-56">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All banks</SelectItem>
-                        {banks.map((bank) => (
-                            <SelectItem key={bank.bankName ?? "__none__"} value={bank.bankName ?? "__none__"}>
-                                {bank.bankName ?? "Uncategorized"} ({bank.count})
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
+            {/* Side panel with the full question, opened by clicking a row */}
+            <Sheet open={viewing !== null} onOpenChange={(open) => !open && setViewing(null)}>
+                <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+                    {viewing && (
+                        <>
+                            <SheetHeader>
+                                <SheetTitle>Question</SheetTitle>
+                                <SheetDescription>
+                                    {viewing.bankName || "Uncategorized"} · {TYPE_FILTER_LABELS[viewing.type] ?? viewing.type}
+                                </SheetDescription>
+                            </SheetHeader>
 
-            <div className="mt-4">
+                            <div className="flex flex-col gap-4 px-4">
+                                <p className="whitespace-pre-wrap text-sm font-medium">{viewing.questionText}</p>
+
+                                <div className="flex flex-wrap gap-2">
+                                    <Badge variant={difficultyVariant(viewing.difficulty)}>{viewing.difficulty || "No difficulty"}</Badge>
+                                    <Badge variant="outline">{viewing.marks} mark{viewing.marks === 1 ? "" : "s"}</Badge>
+                                </div>
+
+                                {viewing.options.length > 0 && (
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-xs font-medium text-muted-foreground">Options</p>
+                                        {viewing.options.map((option) => (
+                                            <div
+                                                key={option.id}
+                                                className={`rounded-md border px-3 py-2 text-sm ${
+                                                    option.isCorrect ? "border-primary bg-accent font-medium" : ""
+                                                }`}
+                                            >
+                                                {option.optionText}
+                                                {option.isCorrect && <span className="ml-2 text-xs text-primary">✓ Correct</span>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <SheetFooter className="flex-row">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={() => {
+                                        const question = viewing;
+                                        setViewing(null);
+                                        openEditDialog(question);
+                                    }}
+                                >
+                                    <Pencil /> Edit
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    className="flex-1"
+                                    onClick={() => {
+                                        const questionId = viewing.id;
+                                        setViewing(null);
+                                        handleDelete(questionId);
+                                    }}
+                                >
+                                    <Trash2 /> Delete
+                                </Button>
+                            </SheetFooter>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
+
+            <div>
                 {loading && <Skeleton className="h-64 w-full rounded-xl" />}
                 {error && <ErrorState message={error} onRetry={loadQuestions} />}
 
@@ -505,48 +622,86 @@ export default function TeacherQuestionsPage() {
                     />
                 )}
 
+                {/* Desktop/tablet: a table that fits the page. Bank and type are
+                    small grey text under the question instead of their own columns. */}
                 {!loading && !error && questions.length > 0 && (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Question</TableHead>
-                                <TableHead>Bank</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Difficulty</TableHead>
-                                <TableHead>Marks</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {questions.map((question) => (
-                                <TableRow key={question.id}>
-                                    <TableCell className="max-w-md truncate">{question.questionText}</TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                        {question.bankName || "—"}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className="capitalize">
-                                            {question.type.replace("_", " ")}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={difficultyVariant(question.difficulty)}>
-                                            {question.difficulty || "—"}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>{question.marks}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(question)}>
-                                            <Pencil />
-                                        </Button>
-                                        <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(question.id)}>
-                                            <Trash2 className="text-destructive" />
-                                        </Button>
-                                    </TableCell>
+                    <div className="hidden rounded-xl bg-card ring-1 ring-foreground/10 md:block">
+                        <Table className="table-fixed">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="pl-4">Question</TableHead>
+                                    <TableHead className="w-28">Difficulty</TableHead>
+                                    <TableHead className="w-20">Marks</TableHead>
+                                    <TableHead className="w-14" />
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {questions.map((question) => (
+                                    <TableRow
+                                        key={question.id}
+                                        onClick={() => setViewing(question)}
+                                        className="cursor-pointer"
+                                    >
+                                        <TableCell className="pl-4 whitespace-normal">
+                                            <p className="line-clamp-2 font-medium">{question.questionText}</p>
+                                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                                {question.bankName || "Uncategorized"} · {TYPE_FILTER_LABELS[question.type] ?? question.type}
+                                            </p>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={difficultyVariant(question.difficulty)}>
+                                                {question.difficulty || "—"}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>{question.marks}</TableCell>
+                                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                            <QuestionActions
+                                                onEdit={() => openEditDialog(question)}
+                                                onDelete={() => handleDelete(question.id)}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+
+                {/* Phones: each question is a stacked card instead of a table row */}
+                {!loading && !error && questions.length > 0 && (
+                    <div className="flex flex-col gap-3 md:hidden">
+                        {questions.map((question) => (
+                            <div
+                                key={question.id}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => setViewing(question)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") setViewing(question);
+                                }}
+                                className="rounded-xl bg-card p-4 ring-1 ring-foreground/10 active:bg-muted"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <p className="line-clamp-3 text-sm font-medium">{question.questionText}</p>
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                        <QuestionActions
+                                            onEdit={() => openEditDialog(question)}
+                                            onDelete={() => handleDelete(question.id)}
+                                        />
+                                    </div>
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    {question.bankName || "Uncategorized"} · {TYPE_FILTER_LABELS[question.type] ?? question.type}
+                                </p>
+                                <div className="mt-3 flex items-center gap-2">
+                                    <Badge variant={difficultyVariant(question.difficulty)}>{question.difficulty || "—"}</Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                        {question.marks} mark{question.marks === 1 ? "" : "s"}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 )}
 
                 {!loading && !error && totalPages > 1 && (

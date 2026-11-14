@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/empty-state";
 import ErrorState from "@/components/error-state";
 
+import PageHeader from "@/components/page-header";
 type Classroom = {
     id: string;
     name: string;
@@ -99,9 +100,9 @@ export default function StudentClassroomsPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">My Classrooms</h1>
+            <PageHeader title="My Classrooms" />
 
-            <form onSubmit={handleJoin} className="mt-4 flex max-w-md gap-2">
+            <form onSubmit={handleJoin} className="flex max-w-md gap-2">
                 <Input
                     placeholder="Enter join code (e.g. sq7tso)"
                     value={joinCode}
@@ -118,7 +119,7 @@ export default function StudentClassroomsPage() {
 
             <div className="mt-8">
                 {loading && (
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-6 sm:grid-cols-2">
                         <Skeleton className="h-28 rounded-xl" />
                         <Skeleton className="h-28 rounded-xl" />
                     </div>
@@ -134,7 +135,7 @@ export default function StudentClassroomsPage() {
                     />
                 )}
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-6 sm:grid-cols-2">
                     {classrooms.map((classroom) => (
                         <Link key={classroom.id} href={`/student/classrooms/${classroom.id}`} className="group/card-link rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
                             <Card className="h-full transition hover:bg-muted/50 hover:shadow-md hover:ring-primary/40 group-active/card-link:bg-muted">

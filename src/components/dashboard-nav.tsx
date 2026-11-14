@@ -125,7 +125,9 @@ export default function DashboardNav({
 
             <SidebarInset>
                 <DashboardTopbar email={email} />
-                <div className="flex-1 p-6">
+                {/* page padding: 16px on phones, 24px from tablet up. min-w-0 stops
+                    wide content from pushing the page sideways. */}
+                <div className="w-full min-w-0 flex-1 p-4 sm:p-6">
                     {!HOME_PATHS.includes(pathname) && <BackButton />}
                     {children}
                 </div>

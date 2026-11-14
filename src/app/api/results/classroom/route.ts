@@ -179,6 +179,20 @@ export async function GET(req: Request) {
                 }
             }
 
+            // "Last active" = the newest thing that happened in this classroom:
+            // created, a student joined, an exam was created, or an attempt was submitted.
+            let lastActiveAt = classroom.createdAt;
+            for (const member of classroom.members) {
+                if (member.createdAt > lastActiveAt) lastActiveAt = member.createdAt;
+            }
+            for (const exam of classroom.exams) {
+                if (exam.createdAt > lastActiveAt) lastActiveAt = exam.createdAt;
+                for (const attempt of exam.attempts) {
+                    const attemptTime = attempt.submittedAt ?? attempt.startedAt;
+                    if (attemptTime > lastActiveAt) lastActiveAt = attemptTime;
+                }
+            }
+
             const classroomAverageScore =
                 classroomTotalAttempts > 0 ? classroomTotalScore / classroomTotalAttempts : 0;
             const classroomPassRate =
@@ -218,6 +232,8 @@ export async function GET(req: Request) {
 
                 passRate:
                     Number(classroomPassRate.toFixed(2)),
+
+                lastActiveAt,
 
             };
         })

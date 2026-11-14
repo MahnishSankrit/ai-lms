@@ -8,6 +8,7 @@ import PageSkeleton from "@/components/page-skeleton";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
+import PageHeader from "@/components/page-header";
 type Statistic = {
     totalAttempts: number;
     averageScore: number;
@@ -65,9 +66,9 @@ export default function ExamResultsPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">{examTitle} — Results</h1>
+            <PageHeader title={<>{examTitle} — Results</>} />
 
-            <div className="mt-4 flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4">
                 <div className="rounded-md border border-border bg-card px-4 py-3">
                     <p className="text-xs text-muted-foreground">Attempts</p>
                     <p className="text-lg font-semibold text-foreground">{statistic.totalAttempts}</p>

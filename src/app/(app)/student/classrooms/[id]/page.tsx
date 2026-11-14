@@ -29,6 +29,7 @@ import {
 import EmptyState from "@/components/empty-state";
 import ErrorState from "@/components/error-state";
 import RelativeDate from "@/components/relative-date";
+import PageHeader from "@/components/page-header";
 
 type Announcement = {
     id: string;
@@ -145,7 +146,7 @@ export default function ClassroomDetailsPage() {
         return (
             <div className="flex flex-col gap-4">
                 <Skeleton className="h-8 w-64" />
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-6 sm:grid-cols-2">
                     <Skeleton className="h-20 rounded-xl" />
                     <Skeleton className="h-20 rounded-xl" />
                 </div>
@@ -184,15 +185,17 @@ export default function ClassroomDetailsPage() {
     return (
         <div>
             {/* Header + leave button */}
-            <div className="flex items-start justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{classroom.name}</h1>
-                    {classroom.subject && <p className="mt-1 text-sm text-muted-foreground">{classroom.subject}</p>}
-                    {classroom.description && (
-                        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{classroom.description}</p>
-                    )}
-                </div>
-
+            <PageHeader
+                title={classroom.name}
+                description={
+                    classroom.subject || classroom.description ? (
+                        <>
+                            {classroom.subject}
+                            {classroom.description && <span className="mt-1 block">{classroom.description}</span>}
+                        </>
+                    ) : undefined
+                }
+                actions={
                 <AlertDialog>
                     <AlertDialogTrigger render={<Button variant="outline" size="sm" />}>
                         <LogOut /> Leave classroom
@@ -213,10 +216,11 @@ export default function ClassroomDetailsPage() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-            </div>
+                }
+            />
 
             {/* Teacher + classmates */}
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="mt-6 grid gap-6 sm:grid-cols-2">
                 <Card>
                     <CardContent className="flex items-center gap-3">
                         <UserRound className="size-8 text-primary/60" />

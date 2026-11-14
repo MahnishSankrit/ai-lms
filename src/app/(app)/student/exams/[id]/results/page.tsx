@@ -23,6 +23,7 @@ import ErrorState from "@/components/error-state";
 import RelativeDate from "@/components/relative-date";
 import { formatIndianDateTime } from "@/lib/format-date";
 
+import PageHeader from "@/components/page-header";
 type Violation = {
     id: string;
     type: string;
@@ -107,14 +108,12 @@ function ExamResultContent() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">{result.examTitle}</h1>
-            {result.submittedAt && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                    Submitted <RelativeDate date={result.submittedAt} />
-                </p>
-            )}
+            <PageHeader
+                title={result.examTitle}
+                description={result.submittedAt ? <>Submitted <RelativeDate date={result.submittedAt} /></> : undefined}
+            />
 
-            <div className="mt-4 flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4">
                 <Card>
                     <CardContent>
                         <p className="text-xs text-muted-foreground">Score</p>

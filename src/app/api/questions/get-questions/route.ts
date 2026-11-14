@@ -112,7 +112,16 @@ export async function GET(req: Request){
             }
         })
 
-        const totalPages = Math.ceil(totalCount / limit);   
+        // for the "+N this week" trend on the teacher dashboard
+        const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const addedThisWeek = await prisma.question.count({
+            where: {
+                createdById: teacher.id,
+                createdAt: { gte: oneWeekAgo },
+            }
+        })
+
+        const totalPages = Math.ceil(totalCount / limit);
 
         if(questions.length === 0){
             return NextResponse.json(
@@ -125,6 +134,7 @@ export async function GET(req: Request){
             {
                 questions: questions,
                 totalCount: totalCount,
+                addedThisWeek: addedThisWeek,
                 totalPages: totalPages,
                 currentPage: page
             },

@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 
         const validatedBody = generateQuestionSchema.parse(body);
 
-        const { text, numberOfQuestions } = validatedBody;
+        const { text, numberOfQuestions, difficulty } = validatedBody;
 
         const userId = session.user.id;
         if (!userId) {
@@ -88,7 +88,8 @@ export async function POST(req: Request) {
         try {
             questions = await aiService.generateQuestions(
                 text,
-                numberOfQuestions
+                numberOfQuestions,
+                difficulty
             );
         } catch (error) {
             await refundAiQuota(userId);

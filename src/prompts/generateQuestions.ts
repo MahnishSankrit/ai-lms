@@ -1,6 +1,7 @@
 export const buildQuestionPrompt = (
   studyMaterial: string,
-  numberOfQuestions: number = 10
+  numberOfQuestions: number = 10,
+  difficulty: string = "Mixed"
 ) => `
 You are an expert university professor and examination paper setter.
 
@@ -16,10 +17,12 @@ RULES
 4. Do NOT include explanations outside JSON.
 5. Generate questions only from the provided content.
 6. Avoid duplicate questions.
-7. Mix Easy, Medium, and Hard questions.
+7. ${difficulty === "Mixed"
+    ? "Mix Easy, Medium, and Hard questions."
+    : `Every question must be ${difficulty} difficulty, and "difficulty" must be "${difficulty}".`}
 8. Every question must have exactly four options.
 9. Exactly ONE option must have "isCorrect": true.
-10. Marks should be between 1 and 5.
+10. Marks should be 1.
 
 ==========================
 JSON FORMAT
@@ -29,7 +32,7 @@ JSON FORMAT
   {
     "questionText": "What is React?",
     "type": "mcq",
-    "marks": 2,
+    "marks": 1,
     "difficulty": "Easy",
     "explanation": "React is a JavaScript library for building user interfaces.",
     "options": [

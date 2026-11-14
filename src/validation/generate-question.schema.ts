@@ -10,4 +10,9 @@ export const generateQuestionSchema = z.object({
         .min(1)
         .max(100)
         .default(10),
+
+    // "Mixed" = a mix of Easy, Medium and Hard (the old behaviour)
+    difficulty: z
+        .enum(["Mixed", "Easy", "Medium", "Hard"])
+        .default("Mixed"),
 });

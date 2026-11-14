@@ -271,7 +271,64 @@ export default function AdminUsersPage() {
                     <EmptyState icon={UsersIcon} title="No users" description="Nothing to show yet." />
                 )}
 
+                {/* Phones: one stacked card per user instead of a table row */}
                 {!loading && !error && users.length > 0 && (
+                    <div className="flex flex-col gap-3 md:hidden">
+                        {users.map((user) => {
+                            const isSelf = session?.user?.id === user.id;
+
+                            return (
+                                <div key={user.id} className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+                                    <p className="truncate font-medium">{user.email}</p>
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                        <Badge variant="outline" className="capitalize">{user.role}</Badge>
+                                        <Badge variant={user.isVerified ? "default" : "secondary"}>
+                                            {user.isVerified ? "Verified" : "Not verified"}
+                                        </Badge>
+                                    </div>
+
+                                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                                        <Select
+                                            items={STATUS_LABELS}
+                                            value={user.status}
+                                            disabled={isSelf}
+                                            onValueChange={(value: string | null) => {
+                                                if (value && value !== user.status) handleStatusChange(user.id, value);
+                                            }}
+                                        >
+                                            <SelectTrigger className="flex-1">
+                                                <SelectValue placeholder="Set status..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="active">Active</SelectItem>
+                                                <SelectItem value="inactive">Inactive</SelectItem>
+                                                <SelectItem value="suspended">Suspended</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {!user.isVerified && (
+                                            <Button variant="outline" size="sm" onClick={() => handleVerify(user.id)}>
+                                                Verify
+                                            </Button>
+                                        )}
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleDelete(user.id)}
+                                            disabled={isSelf}
+                                            className="text-destructive"
+                                        >
+                                            Delete
+                                        </Button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Tablet and up: the table */}
+                {!loading && !error && users.length > 0 && (
+                    <div className="hidden rounded-xl bg-card ring-1 ring-foreground/10 md:block">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -341,6 +398,7 @@ export default function AdminUsersPage() {
                             })}
                         </TableBody>
                     </Table>
+                    </div>
                 )}
 
                 {!loading && !error && totalPages > 1 && (
