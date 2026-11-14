@@ -1,0 +1,119 @@
+/*
+ * THEME FILE -- the one place to change the website's colours.
+ *
+ * Every page and component uses Tailwind classes like bg-primary,
+ * text-muted-foreground, border-border, bg-card... Those classes read the
+ * variables below, so editing a colour here changes it on every page.
+ *
+ * Brand palette (light mode):
+ *   Primary        #1F4E79   buttons, links, active items
+ *   Primary hover  #173B5C   use the class hover:bg-primary-hover
+ *   Accent         #F2A541   badges and highlights ONLY -> bg-highlight / text-highlight
+ *   Background     #F7F8FA   page background
+ *   Cards          #FFFFFF   cards, popovers, menus, sidebar
+ *   Text           #1E2933
+ *   Muted text     #5B6773
+ *   Borders        #E1E5EA
+ *
+ * Note: shadcn's own "accent" variable is the soft hover background used by
+ * menus and dropdowns, so it's set to a light tint of the primary blue.
+ * The orange accent lives in "highlight" so menus don't turn orange.
+ */
+
+:root {
+  /* page + text */
+  --background: #F7F8FA;
+  --foreground: #1E2933;
+
+  /* surfaces */
+  --card: #FFFFFF;
+  --card-foreground: #1E2933;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E2933;
+
+  /* brand */
+  --primary: #1F4E79;
+  --primary-hover: #173B5C;
+  --primary-foreground: #FFFFFF;
+
+  /* orange accent: badges and highlights only */
+  --highlight: #F2A541;
+  --highlight-foreground: #1E2933;
+
+  /* neutral helpers */
+  --secondary: #EEF1F4;
+  --secondary-foreground: #1E2933;
+  --muted: #EEF1F4;
+  --muted-foreground: #5B6773;
+  --accent: #E8EEF5; /* soft blue hover background for menus/list items */
+  --accent-foreground: #1F4E79;
+
+  --destructive: #C0392B;
+  --border: #E1E5EA;
+  --input: #E1E5EA;
+  --ring: #1F4E79;
+
+  /* charts: shades of the brand blue + the accent */
+  --chart-1: #1F4E79;
+  --chart-2: #3A6EA5;
+  --chart-3: #6F98C4;
+  --chart-4: #F2A541;
+  --chart-5: #5B6773;
+
+  /* sidebar */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1E2933;
+  --sidebar-primary: #1F4E79;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E8EEF5;
+  --sidebar-accent-foreground: #1F4E79;
+  --sidebar-border: #E1E5EA;
+  --sidebar-ring: #1F4E79;
+
+  --radius: 0.625rem;
+}
+
+/* Dark mode: same brand hues, adjusted so text stays readable on dark. */
+.dark {
+  --background: #11181F;
+  --foreground: #E6EAEE;
+
+  --card: #18222C;
+  --card-foreground: #E6EAEE;
+  --popover: #18222C;
+  --popover-foreground: #E6EAEE;
+
+  --primary: #5B8FC4;
+  --primary-hover: #7AA7D6;
+  --primary-foreground: #0E1620;
+
+  --highlight: #F2A541;
+  --highlight-foreground: #1E2933;
+
+  --secondary: #22303C;
+  --secondary-foreground: #E6EAEE;
+  --muted: #22303C;
+  --muted-foreground: #9AA6B2;
+  --accent: #1E3346;
+  --accent-foreground: #CFE0F2;
+
+  --destructive: #E06B5E;
+  --border: #2A3743;
+  --input: #2A3743;
+  --ring: #5B8FC4;
+
+  --chart-1: #5B8FC4;
+  --chart-2: #7AA7D6;
+  --chart-3: #A5C3E3;
+  --chart-4: #F2A541;
+  --chart-5: #9AA6B2;
+
+  --sidebar: #18222C;
+  --sidebar-foreground: #E6EAEE;
+  --sidebar-primary: #5B8FC4;
+  --sidebar-primary-foreground: #0E1620;
+  --sidebar-accent: #1E3346;
+  --sidebar-accent-foreground: #CFE0F2;
+  --sidebar-border: #2A3743;
+  --sidebar-ring: #5B8FC4;
+}

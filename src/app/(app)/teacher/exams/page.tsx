@@ -153,7 +153,7 @@ export default function TeacherExamsPage() {
                 <h1 className="text-2xl font-bold tracking-tight">My Exams</h1>
                 <Link
                     href="/teacher/exams/new"
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/80"
+                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                 >
                     + New exam
                 </Link>

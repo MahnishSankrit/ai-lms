@@ -401,7 +401,7 @@ export default function TakeExamPage() {
                     <button
                         type="submit"
                         disabled={startingAttempt}
-                        className="rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
+                        className="rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                     >
                         {startingAttempt ? "Starting..." : "Start exam"}
                     </button>
@@ -559,7 +559,7 @@ export default function TakeExamPage() {
                     render={
                         <button
                             disabled={submitting}
-                            className="mt-8 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
+                            className="mt-8 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                         />
                     }
                 >

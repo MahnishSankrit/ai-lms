@@ -272,7 +272,7 @@ export default function NewExamPage() {
                     <button
                         type="submit"
                         disabled={creating}
-                        className="mt-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
+                        className="mt-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                     >
                         {creating ? "Creating..." : "Create exam"}
                     </button>

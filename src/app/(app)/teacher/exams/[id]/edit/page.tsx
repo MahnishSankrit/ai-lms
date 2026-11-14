@@ -533,7 +533,7 @@ export default function EditExamPage() {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
+                            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                         >
                             {saving ? "Saving..." : "Save changes"}
                         </button>
@@ -721,7 +721,7 @@ export default function EditExamPage() {
                                 type="button"
                                 onClick={() => handleAddSelected(selectedAvailableIds)}
                                 disabled={selectedAvailableIds.length === 0 || addingSelected}
-                                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {addingSelected ? "Adding..." : `Add selected (${selectedAvailableIds.length})`}
                             </button>
